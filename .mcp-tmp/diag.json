@@ -1,0 +1,5 @@
+{
+  "csharpCode": "using UnityEngine;\nusing UnityEditor;\npublic class Diag {\n  public static string Main() {\n    var table = AssetDatabase.LoadAssetAtPath<FluMix.StringTable>(\"Assets/FluMix/Data/StringTable.asset\");\n    var q = AssetDatabase.LoadAssetAtPath<FluMix.QuestionBank>(\"Assets/FluMix/Data/QuestionBank.asset\");\n    var mixer = AssetDatabase.LoadAssetAtPath<UnityEngine.Audio.AudioMixer>(\"Assets/FluMix/Audio/FluMix.mixer\");\n    string groups = mixer == null ? \"no mixer\" : string.Join(\",\", System.Array.ConvertAll(mixer.FindMatchingGroups(\"\"), g => g.name));\n    return \"table=\" + (table == null ? \"null\" : table.entries.Count.ToString()) + \" q=\" + (q == null ? \"null\" : q.questions.Count.ToString()) + \" mixer=\" + groups;\n  }\n}\n",
+  "className": "Diag",
+  "methodName": "Main"
+}

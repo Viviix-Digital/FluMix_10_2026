@@ -1,0 +1,5 @@
+{
+  "csharpCode": "using UnityEditor.SceneManagement;\nusing UnityEngine;\npublic class OpenLogin {\n  public static string Main() {\n    EditorSceneManager.OpenScene(\"Assets/FluMix/Scenes/Login.unity\");\n    return UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;\n  }\n}\n",
+  "className": "OpenLogin",
+  "methodName": "Main"
+}

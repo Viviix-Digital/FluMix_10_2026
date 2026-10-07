@@ -1,0 +1,5 @@
+{
+  "csharpCode": "using UnityEngine;\npublic class RunBuild {\n  public static string Main() {\n    FluMix.EditorTools.FluMixSceneBuilder.BuildAll();\n    return \"built\";\n  }\n}\n",
+  "className": "RunBuild",
+  "methodName": "Main"
+}

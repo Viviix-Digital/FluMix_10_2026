@@ -1,0 +1,73 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: AudioBank
+  m_EditorClassIdentifier: Assembly-CSharp:FluMix:AudioBank
+  cues:
+  - id: music_menu
+    clip: {fileID: 8300000, guid: 919dfcda493375944a1fb2c572685242, type: 3}
+  - id: music_battle
+    clip: {fileID: 8300000, guid: e7cfb894e254e72498a574d26a50e572, type: 3}
+  - id: stinger_sos
+    clip: {fileID: 8300000, guid: e9a0df3fa4e20504a8ecef556795ae2f, type: 3}
+  - id: ui_hover
+    clip: {fileID: 8300000, guid: c1cbc73381c53ff4e9c63fe2cec07531, type: 3}
+  - id: ui_confirm
+    clip: {fileID: 8300000, guid: 33c9aea2fa369a3488f0424b1fae48b3, type: 3}
+  - id: ui_deny
+    clip: {fileID: 8300000, guid: deabec9b5a5efe242b5c4d176f54047b, type: 3}
+  - id: ui_modal_open
+    clip: {fileID: 8300000, guid: d0b0f7a5004815140bb664c862f767aa, type: 3}
+  - id: ui_modal_close
+    clip: {fileID: 8300000, guid: 2e758438193e66e4cb5dfd6a639c39d0, type: 3}
+  - id: ui_page
+    clip: {fileID: 8300000, guid: 181e530e6783e354a998655d529df1bb, type: 3}
+  - id: input_key
+    clip: {fileID: 8300000, guid: 289ceb8aedfffa448a28281c54005f94, type: 3}
+  - id: input_password
+    clip: {fileID: 8300000, guid: ed4579f18e4d2f9409f347d5ef3cb6ba, type: 3}
+  - id: quiz_select
+    clip: {fileID: 8300000, guid: 32edec5e7e02bcb4a91930e00c6134ee, type: 3}
+  - id: quiz_unlock
+    clip: {fileID: 8300000, guid: e34713d76c2da464985e251ac5bcb440, type: 3}
+  - id: quiz_correct
+    clip: {fileID: 8300000, guid: bf2422b8d382f82448d83173aea5bd8b, type: 3}
+  - id: quiz_wrong
+    clip: {fileID: 8300000, guid: aad8a46f37b4a26418c218f57f857127, type: 3}
+  - id: quiz_explain
+    clip: {fileID: 8300000, guid: 14cfac51af235b1479011563eaabc464, type: 3}
+  - id: beam_green
+    clip: {fileID: 8300000, guid: 63668506a51cb154799882f9bfa837de, type: 3}
+  - id: beam_blue
+    clip: {fileID: 8300000, guid: 10e9c7e3f42144942a78c7b5fff5ec41, type: 3}
+  - id: beam_pink
+    clip: {fileID: 8300000, guid: e8ad78596e2df6d49860c18abb1adad2, type: 3}
+  - id: impact_correct
+    clip: {fileID: 8300000, guid: 17ec4f84c5089b44e8051861dc12c77c, type: 3}
+  - id: impact_wrong
+    clip: {fileID: 8300000, guid: f29599bf84665774caeb4a9140046b33, type: 3}
+  - id: virus_spawn
+    clip: {fileID: 8300000, guid: 543ba0d6bbbf5974cab4214dd5c40189, type: 3}
+  - id: virus_evolve
+    clip: {fileID: 8300000, guid: c04cc5e4d48388148a0296e79f35c775, type: 3}
+  - id: virus_leak
+    clip: {fileID: 8300000, guid: e1f3197029bdf054e98117ca525fc95a, type: 3}
+  - id: timer_tick
+    clip: {fileID: 8300000, guid: 4ae3989bd562ef24d9417b1881efbe05, type: 3}
+  - id: timer_end
+    clip: {fileID: 8300000, guid: 8b9a8befb56d85149967f4c32028d133, type: 3}
+  - id: warning_alarm
+    clip: {fileID: 8300000, guid: 8f328745fc38a354fb22f21a3a55a53b, type: 3}
+  - id: water_loop
+    clip: {fileID: 8300000, guid: b3f8cf2d7e584a1458a2a645f20afeb2, type: 3}
+  - id: podium_land
+    clip: {fileID: 8300000, guid: 30ea52899e70a9a4dad6139168716b3e, type: 3}

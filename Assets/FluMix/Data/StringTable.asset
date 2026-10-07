@@ -1,0 +1,127 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 0}
+  m_Name: StringTable
+  m_EditorClassIdentifier: Assembly-CSharp:FluMix:StringTable
+  entries:
+  - id: login.title
+    text: "\u0110\u0102NG NH\u1EACP"
+  - id: login.account
+    text: "T\xE0i kho\u1EA3n"
+  - id: login.password
+    text: "M\u1EADt kh\u1EA9u"
+  - id: login.forgot
+    text: "Qu\xEAn m\u1EADt kh\u1EA9u?"
+  - id: login.submit
+    text: "\u0110\u0102NG NH\u1EACP"
+  - id: login.forgot_body
+    text: "N\u1EBFu b\u1EA1n qu\xEAn m\u1EADt kh\u1EA9u, h\xE3y li\xEAn h\u1EC7 gi\xE1o
+      vi\xEAn ho\u1EB7c qu\u1EA3n tr\u1ECB vi\xEAn \u0111\u1EC3 \u0111\u01B0\u1EE3c
+      c\u1EA5p l\u1EA1i."
+  - id: login.forgot_ok
+    text: "\u0110\xC3 HI\u1EC2U"
+  - id: howto.title
+    text: "LU\u1EACT CH\u01A0I"
+  - id: howto.s1
+    text: "01. NHI\u1EC6M V\u1EE4"
+  - id: howto.s1b
+    text: "Ng\u0103n virus ti\u1EBFn v\xE0o th\xE0nh b\u1EB1ng c\xE1ch ch\u1ECDn
+      \u0111\xFAng chi\u1EBFn binh."
+  - id: howto.green
+    text: "Virus xanh l\xE1"
+  - id: howto.blue
+    text: "Virus xanh d\u01B0\u01A1ng"
+  - id: howto.pink
+    text: "Virus h\u1ED3ng"
+  - id: howto.s2
+    text: "02. C\xC1CH CH\u01A0I"
+  - id: howto.s2b
+    text: "Quan s\xE1t virus xu\u1EA5t hi\u1EC7n \u2192 Ch\u1ECDn G, A ho\u1EB7c
+      T \u0111\xFAng m\xE0u \u2192 B\u1EAFn ch\u1EB7n tr\u01B0\u1EDBc khi virus v\xE0o
+      th\xE0nh."
+  - id: howto.s3
+    text: "03. T\xCDNH \u0110I\u1EC2M"
+  - id: howto.s3a
+    text: "Ch\u1ECDn \u0111\xFAng: +100 \u0111i\u1EC3m"
+  - id: howto.s3b
+    text: "Ch\u1ECDn sai: \u221250 \u0111i\u1EC3m"
+  - id: howto.s3c
+    text: "Tr\u1EA3 l\u1EDDi c\xE2u h\u1ECFi: +200 \u0111i\u1EC3m"
+  - id: howto.s4
+    text: "04. C\u1EA2NH B\xC1O"
+  - id: howto.s4a
+    text: "\u0110\u1EA1t m\u1ED1c 1.000 / 2.000 / 5.000 / 10.000 \u0111i\u1EC3m xu\u1EA5t
+      hi\u1EC7n c\u1EA3nh b\xE1o d\u1ECBch c\xFAm."
+  - id: howto.s4b
+    text: "Tr\u1EA3 l\u1EDDi 1 c\xE2u h\u1ECFi \u0111\xFAng ng\u0103n c\u1EA3nh b\xE1o
+      xu\u1EA5t hi\u1EC7n s\u1EDBm trong 20 gi\xE2y ho\u1EB7c \u0111\u1EBFn m\u1ED1c
+      k\u1EBF ti\u1EBFp."
+  - id: howto.s5
+    text: "05. TH\u1EDCI GIAN"
+  - id: howto.s5a
+    text: "M\u1ED7i l\u01B0\u1EE3t t\u1ED1i \u0111a 2 ph\xFAt."
+  - id: howto.s5b
+    text: "Tr\xF2 ch\u01A1i k\u1EBFt th\xFAc khi h\u1EBFt 2 ph\xFAt ho\u1EB7c ho\xE0n
+      th\xE0nh 10 c\xE2u h\u1ECFi, t\xF9y \u0111i\u1EC1u ki\u1EC7n n\xE0o \u0111\u1EBFn
+      tr\u01B0\u1EDBc."
+  - id: howto.s6
+    text: "06. X\u1EBEP H\u1EA0NG"
+  - id: howto.s6b
+    text: "T\xEDch \u0111i\u1EC3m \u0111\u1EC3 v\xE0o TOP 20"
+  - id: howto.top1
+    text: "Top 1: KIM C\u01AF\u01A0NG"
+  - id: howto.top2
+    text: "Top 2: V\xC0NG"
+  - id: howto.top3
+    text: "Top 3: B\u1EA0C"
+  - id: howto.ready
+    text: "S\u1EB4N S\xC0NG CHI\u1EBEN \u0110\u1EA4U"
+  - id: lobby.howto
+    text: "Lu\u1EADt ch\u01A1i"
+  - id: lobby.fight
+    text: "Chi\u1EBFn \u0111\u1EA5u"
+  - id: lobby.board
+    text: "B\u1EA3ng x\u1EBFp h\u1EA1ng"
+  - id: lobby.sos
+    text: SOS
+  - id: hud.time
+    text: TIME
+  - id: hud.score
+    text: SCORE
+  - id: battle.ready
+    text: "S\u1EB4N S\xC0NG"
+  - id: quiz.tab
+    text: "C\xC2U {0}"
+  - id: warn.title
+    text: "C\u1EA2NH B\xC1O D\u1ECACH"
+  - id: explain.correct
+    text: "B\u1EA1n tr\u1EA3 l\u1EDDi \u0111\xFAng!"
+  - id: explain.wrong
+    text: "Ch\u01B0a \u0111\xFAng!"
+  - id: result.title
+    text: "K\u1EBET QU\u1EA2"
+  - id: result.score
+    text: "\u0110i\u1EC3m: {0}"
+  - id: result.leaks
+    text: "Virus l\u1ECDt: {0}"
+  - id: result.board
+    text: "B\u1EA2NG X\u1EBEP H\u1EA0NG"
+  - id: board.title
+    text: "B\u1EA2NG X\u1EBEP H\u1EA0NG"
+  - id: board.sub
+    text: "TOP 10 CHI\u1EBEN BINH"
+  - id: board.points
+    text: "{0} \u0111i\u1EC3m"
+  - id: board.page
+    text: '{0}/4'
+  - id: common.close
+    text: "\u0110\xD3NG"
