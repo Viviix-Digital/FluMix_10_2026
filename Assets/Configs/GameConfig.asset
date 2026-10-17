@@ -1,0 +1,91 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b07fca93d571e2349a64dfdc5b119372, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: Assembly-CSharp::FluMix.GameConfig
+  correctHeroScore: 100
+  wrongHeroScore: -50
+  virusReachScore: -50
+  correctQuestionScore: 200
+  wrongQuestionScore: -100
+  roundSeconds: 120
+  questionSeconds: 10
+  bossCountdownStep: 1
+  explainHoldSeconds: 1.2
+  virusMoveSeconds: 8
+  spawnDelay: 0.6
+  bossScoreMilestones: e8030000d00700008813000010270000
+  maxQuestions: 10
+  simultaneousViruses: 3
+  pauseRoundTimerDuringBoss: 1
+  match:
+  - virus: 0
+    hero: 0
+  - virus: 1
+    hero: 1
+  - virus: 2
+    hero: 2
+  beamTravelSeconds: 0.18
+  hitStopSeconds: 0.08
+  screenShake: 18
+  sheetFps: 12
+  wrongBeamGap: 80
+  scorePopupRise: 80
+  scorePopupSeconds: 0.75
+  bossLungePixels: 40
+  bossLungeSeconds: 0.35
+  idleBobPixels: 6
+  idleBobSeconds: 1.6
+  virusPulseMin: 0.96
+  virusPulseMax: 1.04
+  virusPulseSeconds: 0.8
+  beamStartScale: 0.15
+  beamThickness: 72
+  beamCoreThickness: 14
+  beamWobble: 8
+  beamArtAngle: -25
+  hitFlashSeconds: 0.2
+  hitFlashPeakScale: 1.2
+  whiteFlashSeconds: 0.08
+  virusRetypeDegrees: 12
+  warningStartScale: 0.8
+  warningPopSeconds: 0.45
+  countdownPopScale: 1.35
+  countdownFrom: 3
+  bossEnterScale: 0.4
+  bossShakePixels: 5
+  bossShakeSpeed: 18
+  darkenAlpha: 0.6
+  winShieldDuration: 0.45
+  winShieldStartScale: 0.4
+  winShieldPeakScale: 1.05
+  winShieldSwayDegrees: 8
+  confettiCount: 24
+  confettiSeconds: 1.5
+  redFlashSeconds: 0.15
+  redFlashAlpha: 0.45
+  shakeSeconds: 0.28
+  deathSpinDegrees: 240
+  deathSeconds: 0.28
+  laneSpacing: 150
+  heroRecoilPixels: 18
+  wrongMarkWidth: 220
+  wrongMarkHeight: 64
+  wrongMarkSeconds: 0.45
+  bannerSlideDistance: 420
+  bannerSlideSeconds: 0.4
+  bossDefeatSeconds: 0.55
+  scorePopupSize: 180
+  explainDisabledSeconds: 0
+  debugBumpScore: 1000
+  debugQuickSeconds: 5
+  maxDeltaTime: 0.1

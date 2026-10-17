@@ -1,0 +1,345 @@
+fileFormatVersion: 2
+guid: 7d08d11ee92a87f4498249700df8a9c5
+ModelImporter:
+  serializedVersion: 24200
+  internalIDToNameTable: []
+  externalObjects:
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Background
+    second: {fileID: 2100000, guid: df42acaf04292a742adfac9e4ef4f8ba, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Big1
+    second: {fileID: 2100000, guid: 7f934d584116f2e46962100f8df84de6, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Big2
+    second: {fileID: 2100000, guid: 43e311dba75a1904f80966038fa7a341, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Big3
+    second: {fileID: 2100000, guid: c7c7bc2f139125e4ebd6e99c747ecc8e, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Big4
+    second: {fileID: 2100000, guid: 1e9bbb01fd382664cbf375d5c8382df7, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Castle1
+    second: {fileID: 2100000, guid: 8353ea76cdf748449aec40090e25687d, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Castle2
+    second: {fileID: 2100000, guid: 7d40e2e794febc843bab6baadb59fa5f, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Castle3
+    second: {fileID: 2100000, guid: f712dc9e1fc507f4c8731590739c0791, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Flag
+    second: {fileID: 2100000, guid: 636a211ded37ce3499728c64b8f1c003, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Floor
+    second: {fileID: 2100000, guid: 4c9bf539e240b3443b063147320b5abd, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Plant
+    second: {fileID: 2100000, guid: 8cd0e4c6d6c8b6449ad517c1bd80913c, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Tru
+    second: {fileID: 2100000, guid: 9a1800d131b000c4386d3e3e980fa260, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: Wall
+    second: {fileID: 2100000, guid: 182c99c0ac484464e80f9685aa61cfda, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: c1
+    second: {fileID: 2100000, guid: a231e0153e1557c45bd944ecf168e332, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: c2
+    second: {fileID: 2100000, guid: e7ba4a535ee79a943a355908757c8247, type: 2}
+  - first:
+      type: UnityEngine:Material
+      assembly: UnityEngine.CoreModule
+      name: c3
+    second: {fileID: 2100000, guid: 601374a7dbb8ed647ad37447f6bdb195, type: 2}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle1_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 11c46604c6d804744873909c418c2af4, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle1_Bake__TN_0000
+    second: {fileID: 2800000, guid: 10118475c8fd75240a58d5ce8a9b32d1, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle2_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 55f3ed82aae8fe946a0be10a533ed4ec, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle2_Bake__TN_0000
+    second: {fileID: 2800000, guid: b2a51b303b9fc6e4b9b858d7ed46a1c5, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle3_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 0f75c41dff5bb5d4d9a50aa618ef9868, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle3_Bake__TN_0000
+    second: {fileID: 2800000, guid: 307b2047e17f0b14a90f9e670824cf3d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle4_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: dd49f1f9931a84f4ea380faacbb05cb8, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Big_Castle4_Bake__TN_0000
+    second: {fileID: 2800000, guid: 4d8b8011843f8934a94f1db7ecfb4734, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Castle1_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 2fb717cc53c7dc342950b142eaa13006, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Castle1_Bake__TN_0000
+    second: {fileID: 2800000, guid: feb68d6da5a29b84d96ff3971cd06dab, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Castle2_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 9a823e704cadbfe43951b98da1978307, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Castle2_Bake__TN_0000
+    second: {fileID: 2800000, guid: f1615db16ae0e6440b217b8734bc59fe, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Castle3_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: a0e42a2acec06694793bd626674dc93a, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Castle3_Bake__TN_0000
+    second: {fileID: 2800000, guid: 5e55227d97a1e644a8534c7a71938411, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Flag_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 29a7e4a8cd554644f9a04467d148334d, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Flag_Bake__TN_0000
+    second: {fileID: 2800000, guid: 784940bbb6dbbae40979feef8900c53f, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Floor_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 011363d6fd6e4584bb7db1d2b4a90231, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Floor_Bake__TN_0000
+    second: {fileID: 2800000, guid: 6e46fef587a6db7408c9b5c8baaf088e, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Foliage_Texture1
+    second: {fileID: 2800000, guid: b348c54fab8fe4d4d95d42b15ec5601c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Foliage_Texture3
+    second: {fileID: 2800000, guid: 99cca7812e170514a8184df9f22ae4ed, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Tru_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: 2eb43a2204cdbb94ba66a30aec3f7851, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Tru_Bake__TN_0000
+    second: {fileID: 2800000, guid: 37b8dbb407c7f4144af72d4c74c74514, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Wall1_Bake__DeMain_0000
+    second: {fileID: 2800000, guid: ef99b752e60589a418c32bee4949afce, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: Wall1_Bake__TN_0000
+    second: {fileID: 2800000, guid: 2c96165519d74274aa4b79b45892b90b, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: c11_Alpha
+    second: {fileID: 2800000, guid: 0d78773b6cc8c104b977240ff1587384, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: c2_Alpha
+    second: {fileID: 2800000, guid: e243f1f0c204d894893ebbdc711e9619, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: c3_Alpha
+    second: {fileID: 2800000, guid: 3eb3af4751bd2354987359f8000b40dd, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: l
+    second: {fileID: 2800000, guid: f64955842c4e02a4a9f10c295c363aec, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: m
+    second: {fileID: 2800000, guid: d2cf5e36ad7269846b2e70f3da8d8fe6, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: r
+    second: {fileID: 2800000, guid: 18b6d2f6401a89148805c4132871905c, type: 3}
+  - first:
+      type: UnityEngine:Texture2D
+      assembly: UnityEngine.CoreModule
+      name: "\u0110\u1EA4U TR\u01AF\u1EDCNG B\u1EAEN VIRUT"
+    second: {fileID: 2800000, guid: dee1c378f6825274599312484c9c7026, type: 3}
+  materials:
+    materialImportMode: 2
+    materialName: 0
+    materialSearch: 1
+    materialLocation: 1
+  animations:
+    legacyGenerateAnimations: 4
+    bakeSimulation: 0
+    resampleCurves: 1
+    optimizeGameObjects: 0
+    removeConstantScaleCurves: 0
+    motionNodeName: 
+    animationImportErrors: 
+    animationImportWarnings: 
+    animationRetargetingWarnings: 
+    animationDoRetargetingWarnings: 0
+    importAnimatedCustomProperties: 0
+    importConstraints: 0
+    animationCompression: 1
+    animationRotationError: 0.5
+    animationPositionError: 0.5
+    animationScaleError: 0.5
+    animationWrapMode: 0
+    extraExposedTransformPaths: []
+    extraUserProperties: []
+    clipAnimations: []
+    isReadable: 0
+  meshes:
+    lODScreenPercentages: []
+    globalScale: 1
+    meshCompression: 0
+    addColliders: 0
+    useSRGBMaterialColor: 1
+    sortHierarchyByName: 1
+    importPhysicalCameras: 1
+    importVisibility: 1
+    importBlendShapes: 1
+    importCameras: 1
+    importLights: 1
+    nodeNameCollisionStrategy: 1
+    fileIdsGeneration: 2
+    swapUVChannels: 0
+    generateSecondaryUV: 0
+    useFileUnits: 1
+    keepQuads: 0
+    weldVertices: 1
+    bakeAxisConversion: 0
+    preserveHierarchy: 0
+    skinWeightsMode: 0
+    maxBonesPerVertex: 4
+    minBoneWeight: 0.001
+    optimizeBones: 1
+    generateMeshLods: 0
+    meshLodGenerationFlags: 0
+    maximumMeshLod: -1
+    meshOptimizationFlags: -1
+    indexFormat: 0
+    secondaryUVAngleDistortion: 8
+    secondaryUVAreaDistortion: 15.000001
+    secondaryUVHardAngle: 88
+    secondaryUVMarginMethod: 1
+    secondaryUVMinLightmapResolution: 40
+    secondaryUVMinObjectScale: 1
+    secondaryUVPackMargin: 4
+    useFileScale: 1
+    strictVertexDataChecks: 0
+  tangentSpace:
+    normalSmoothAngle: 60
+    normalImportMode: 0
+    tangentImportMode: 3
+    normalCalculationMode: 4
+    legacyComputeAllNormalsFromSmoothingGroupsWhenMeshHasBlendShapes: 0
+    blendShapeNormalImportMode: 1
+    normalSmoothingSource: 0
+  referencedClips: []
+  importAnimation: 1
+  humanDescription:
+    serializedVersion: 3
+    human: []
+    skeleton: []
+    armTwist: 0.5
+    foreArmTwist: 0.5
+    upperLegTwist: 0.5
+    legTwist: 0.5
+    armStretch: 0.05
+    legStretch: 0.05
+    feetSpacing: 0
+    globalScale: 1
+    rootMotionBoneName: 
+    hasTranslationDoF: 0
+    hasExtraRoot: 0
+    skeletonHasParents: 1
+  lastHumanDescriptionAvatarSource: {instanceID: 0}
+  autoGenerateAvatarMappingIfUnspecified: 1
+  animationType: 2
+  humanoidOversampling: 1
+  avatarSetup: 0
+  addHumanoidExtraRootOnlyWhenUsingAvatar: 1
+  importBlendShapeDeformPercent: 1
+  remapMaterialsIfMaterialImportModeIsNone: 0
+  additionalBone: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

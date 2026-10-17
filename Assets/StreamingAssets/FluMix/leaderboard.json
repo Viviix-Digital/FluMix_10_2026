@@ -1,0 +1,14 @@
+{
+  "entries": [
+    { "name": "CHIẾN BINH 01", "score": 10000 },
+    { "name": "CHIẾN BINH 02", "score": 9500 },
+    { "name": "CHIẾN BINH 03", "score": 9000 },
+    { "name": "CHIẾN BINH 04", "score": 8600 },
+    { "name": "CHIẾN BINH 05", "score": 8300 },
+    { "name": "CHIẾN BINH 06", "score": 8000 },
+    { "name": "CHIẾN BINH 07", "score": 7700 },
+    { "name": "CHIẾN BINH 08", "score": 7500 },
+    { "name": "CHIẾN BINH 09", "score": 6300 },
+    { "name": "CHIẾN BINH 10", "score": 4800 }
+  ]
+}

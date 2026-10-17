@@ -1,0 +1,74 @@
+{
+  "questions": [
+    {
+      "id": "q1",
+      "prompt": "Cúm mùa là bệnh do nguyên nhân nào gây ra?",
+      "options": ["Vi khuẩn", "Virus cúm", "Thay đổi thời tiết", "Dị ứng"],
+      "correctIndex": 1,
+      "explanation": "Cúm mùa do virus cúm gây ra, không phải vi khuẩn hay dị ứng."
+    },
+    {
+      "id": "q2",
+      "prompt": "Tiêm vaccine cúm giúp ích gì?",
+      "options": ["Trị khỏi mọi bệnh hô hấp", "Giúp cơ thể tạo miễn dịch với virus cúm", "Thay cho việc rửa tay", "Chỉ cần tiêm một lần trong đời"],
+      "correctIndex": 1,
+      "explanation": "Vaccine cúm giúp cơ thể tạo miễn dịch, làm giảm nguy cơ mắc và biến chứng. Virus đổi chủng nên cần tiêm nhắc theo mùa."
+    },
+    {
+      "id": "q3",
+      "prompt": "Cách nào giúp hạn chế virus cúm lây qua tay?",
+      "options": ["Chỉ lau khô tay", "Rửa tay bằng xà phòng và nước", "Dùng kháng sinh mỗi ngày", "Uống nước lạnh"],
+      "correctIndex": 1,
+      "explanation": "Rửa tay bằng xà phòng và nước làm giảm virus bám trên tay."
+    },
+    {
+      "id": "q4",
+      "prompt": "Khi bị sốt và ho, nên làm gì để hạn chế lây cúm?",
+      "options": ["Đi học hoặc đi làm bình thường", "Đeo khẩu trang và nghỉ ở nhà", "Dùng chung ly nước", "Không cần che miệng khi ho"],
+      "correctIndex": 1,
+      "explanation": "Đeo khẩu trang khi sốt, ho và nghỉ ở nhà giúp hạn chế lây virus cho người khác."
+    },
+    {
+      "id": "q5",
+      "prompt": "Theo luật của trò chơi, virus xanh lá là virus ở đâu?",
+      "options": ["Trong máu", "Bên ngoài cơ thể", "Trong phổi", "Trong dạ dày"],
+      "correctIndex": 1,
+      "explanation": "Virus xanh là virus bên ngoài cơ thể. Virus cam và đỏ là virus bên trong cơ thể."
+    },
+    {
+      "id": "q6",
+      "prompt": "Vì sao không dùng kháng sinh để trị cúm mùa?",
+      "options": ["Kháng sinh làm virus nhân lên", "Cúm do virus, kháng sinh không diệt virus", "Kháng sinh chỉ dùng cho trẻ em", "Kháng sinh thay được vaccine"],
+      "correctIndex": 1,
+      "explanation": "Cúm mùa do virus gây ra. Kháng sinh trị vi khuẩn, không trị virus."
+    },
+    {
+      "id": "q7",
+      "prompt": "Người đang sốt vì cúm nên nghỉ ngơi ở đâu?",
+      "options": ["Ở nhà, tránh chỗ đông người", "Đến nơi đông người cho quen bệnh", "Đi bơi ngay", "Không cần nghỉ"],
+      "correctIndex": 0,
+      "explanation": "Nghỉ ở nhà khi sốt giúp cơ thể hồi phục và hạn chế lây cúm."
+    },
+    {
+      "id": "q8",
+      "prompt": "Nhóm triệu chứng nào hay gặp khi mắc cúm?",
+      "options": ["Chỉ ngứa da", "Sốt, ho, mệt", "Chỉ đau bụng", "Không có triệu chứng nào"],
+      "correctIndex": 1,
+      "explanation": "Cúm thường gây sốt, ho và mệt mỏi. Nếu nặng cần đi khám."
+    },
+    {
+      "id": "q9",
+      "prompt": "Vì sao vaccine cúm cần được cập nhật theo mùa?",
+      "options": ["Vì virus cúm có thể đổi chủng", "Vì vaccine chỉ có tác dụng một ngày", "Vì thời tiết làm hỏng kháng thể ngay", "Vì kháng sinh hết hạn"],
+      "correctIndex": 0,
+      "explanation": "Virus cúm hay đổi chủng, nên vaccine được cập nhật để phù hợp các chủng đang lưu hành."
+    },
+    {
+      "id": "q10",
+      "prompt": "Vì sao phải chọn đúng chiến binh với đúng loại virus?",
+      "options": ["Vì màu áo cho đẹp", "Vì mỗi loại virus cần đúng đáp ứng miễn dịch", "Vì bắn càng nhiều càng tốt", "Vì mọi virus dùng chung một kháng thể"],
+      "correctIndex": 1,
+      "explanation": "Mỗi loại virus cần đúng kháng thể, đúng đáp ứng miễn dịch. Chọn sai là chưa hạ được virus đó."
+    }
+  ]
+}
