@@ -286,6 +286,7 @@ namespace FluMix
             Vector2 to = virus.view.Rect.anchoredPosition;
             int delta = correct ? config.correctHeroScore : config.wrongHeroScore;
             score.Add(delta);
+            yield return fx.PlayAimArrow(from, to);
             fx.PlayScorePopup(delta, to);
 
             yield return fx.PlayBeam(hero.Id, from, to, correct, worldFrom, worldTo);

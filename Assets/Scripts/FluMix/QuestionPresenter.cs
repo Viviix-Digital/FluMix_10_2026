@@ -177,12 +177,20 @@ namespace FluMix
 
         void Place(Image highlight, int index)
         {
-            if (highlight == null || optionLabels == null || index < 0 || index >= optionLabels.Length || optionLabels[index] == null)
+            if (highlight == null || optionButtons == null || index < 0 || index >= optionButtons.Length || optionButtons[index] == null)
                 return;
 
+            RectTransform mark = highlight.rectTransform;
+            RectTransform option = optionButtons[index].transform as RectTransform;
+            if (option == null)
+                return;
+
+            Vector2 position = mark.anchoredPosition;
+            position.y = option.parent == mark.parent
+                ? option.anchoredPosition.y
+                : mark.parent.InverseTransformPoint(option.position).y;
+            mark.anchoredPosition = position;
             highlight.gameObject.SetActive(true);
-            highlight.rectTransform.position = optionLabels[index].rectTransform.position;
-            highlight.transform.SetSiblingIndex(0);
             highlight.raycastTarget = false;
         }
 

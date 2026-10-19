@@ -648,17 +648,14 @@ namespace FluMix
 
         public IEnumerator PlayBeam(HeroId hero, Vector2 from, Vector2 to, bool connect, Vector3 worldFrom, Vector3 worldTo)
         {
-            if (beam == null)
-                yield break;
+            if (beam != null)
+                beam.gameObject.SetActive(false);
 
             Vector2 direction = to - from;
             float distance = direction.magnitude;
             if (distance < 1f)
                 distance = 1f;
-            Vector2 normal = new Vector2(-direction.y, direction.x).normalized;
             float travel = connect ? distance : Mathf.Max(config.beamThickness, distance - config.wrongBeamGap);
-            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
-            float aligned = angle - config.beamArtAngle;
             Vector2 endPoint = from + direction.normalized * travel;
             FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
             if (shots == null)
@@ -670,34 +667,100 @@ namespace FluMix
                 shots.PlayShot(hero, start, finish, connect);
             }
 
-            beam.sprite = SpriteFor(hero);
-            beam.gameObject.SetActive(true);
-            beam.rectTransform.SetAsLastSibling();
-            beam.rectTransform.anchoredPosition = from;
-            beam.rectTransform.localRotation = Quaternion.Euler(0f, 0f, aligned);
-            beam.rectTransform.localScale = Vector3.one;
-
             float elapsed = 0f;
-            while (elapsed < config.beamTravelSeconds)
+            float seconds = config != null ? config.beamTravelSeconds : 0.18f;
+            while (elapsed < seconds)
             {
                 elapsed += Time.deltaTime;
-                float u = Mathf.Clamp01(elapsed / config.beamTravelSeconds);
-                float length = Mathf.Lerp(travel * config.beamStartScale, travel, u);
-                float wobble = Mathf.Sin(u * 30f) * config.beamWobble;
-                beam.rectTransform.anchoredPosition = from + normal * wobble;
-                beam.rectTransform.sizeDelta = new Vector2(length, config.beamThickness);
-                if (beamCore != null)
-                {
-                    beamCore.rectTransform.sizeDelta = new Vector2(length, config.beamCoreThickness);
-                    beamCore.rectTransform.anchoredPosition = Vector2.zero;
-                }
+                yield return null;
+            }
+        }
 
+        RectTransform aimArrow;
+        Image aimShaft;
+        Image aimHead;
+        static Sprite aimHeadSprite;
+
+        public IEnumerator PlayAimArrow(Vector2 origin, Vector2 target)
+        {
+            EnsureAimArrow();
+            if (aimArrow == null)
+                yield break;
+
+            aimArrow.gameObject.SetActive(true);
+            aimArrow.SetAsLastSibling();
+            float elapsed = 0f;
+            const float seconds = 0.28f;
+            while (elapsed < seconds)
+            {
+                elapsed += Time.deltaTime;
+                float u = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / seconds));
+                LayoutAimArrow(origin, Vector2.Lerp(origin, target, u));
+                Color color = new Color(1f, 0.95f, 0.45f, 1f);
+                aimShaft.color = color;
+                aimHead.color = color;
                 yield return null;
             }
 
-            Vector2 end = endPoint;
-            yield return PlayImpact(end, angle);
-            beam.gameObject.SetActive(false);
+            LayoutAimArrow(origin, target);
+            yield return new WaitForSeconds(0.06f);
+            aimArrow.gameObject.SetActive(false);
+        }
+
+        void EnsureAimArrow()
+        {
+            if (aimArrow != null || (arena == null && scoreRoot == null))
+                return;
+
+            Transform parent = arena != null ? arena : scoreRoot;
+            aimArrow = FluMixUi.CreateRect(parent, "AimArrow", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f));
+            aimShaft = FluMixUi.CreateImage(aimArrow, "Shaft", FluMixUi.White, new Vector2(40f, 8f), false);
+            aimShaft.rectTransform.pivot = new Vector2(0f, 0.5f);
+            aimShaft.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            aimShaft.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            aimHead = FluMixUi.CreateImage(aimArrow, "Head", AimHeadSprite(), new Vector2(28f, 28f), false);
+            aimHead.rectTransform.pivot = new Vector2(0f, 0.5f);
+            aimHead.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            aimHead.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            aimArrow.gameObject.SetActive(false);
+        }
+
+        void LayoutAimArrow(Vector2 from, Vector2 to)
+        {
+            Vector2 direction = to - from;
+            float length = direction.magnitude;
+            float angle = length > 0.01f ? Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg : 0f;
+            aimArrow.anchoredPosition = from;
+            aimArrow.localRotation = Quaternion.Euler(0f, 0f, angle);
+            const float head = 28f;
+            bool showHead = length > head + 4f;
+            aimHead.enabled = showHead;
+            aimShaft.rectTransform.anchoredPosition = Vector2.zero;
+            aimShaft.rectTransform.sizeDelta = new Vector2(showHead ? length - head : length, 8f);
+            aimHead.rectTransform.anchoredPosition = new Vector2(Mathf.Max(0f, length - head), 0f);
+            aimHead.rectTransform.sizeDelta = new Vector2(head, head);
+        }
+
+        static Sprite AimHeadSprite()
+        {
+            if (aimHeadSprite != null)
+                return aimHeadSprite;
+
+            const int size = 32;
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float across = x / (float)(size - 1);
+                    float fromCenter = Mathf.Abs(y / (float)(size - 1) - 0.5f) * 2f;
+                    texture.SetPixel(x, y, across >= fromCenter ? Color.white : Color.clear);
+                }
+            }
+
+            texture.Apply();
+            aimHeadSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0f, 0.5f), 100f);
+            return aimHeadSprite;
         }
 
         public IEnumerator PlayVirusDeath(RectTransform virus)
@@ -1062,16 +1125,6 @@ namespace FluMix
             }
 
             return -1;
-        }
-
-        Sprite SpriteFor(HeroId hero)
-        {
-            switch (hero)
-            {
-                case HeroId.G: return beamG != null ? beamG : beamA;
-                case HeroId.T: return beamT != null ? beamT : beamA;
-                default: return beamA;
-            }
         }
 
         static Color ColorFor(VirusType type)

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FluMix
@@ -46,11 +47,14 @@ namespace FluMix
 
             Vector3 end = connect ? worldEnd : ShortEnd(worldStart, worldEnd);
             Transform weapon = Weapon(hero);
+            Color tint = TintFor(hero);
             Aim(weapon, worldStart, end);
+            TintParticles(weapon, tint);
             PlayParticles(weapon);
             if (bloom != null)
             {
                 bloom.position = worldStart;
+                TintParticles(bloom, tint);
                 PlayParticles(bloom);
             }
 
@@ -58,6 +62,7 @@ namespace FluMix
             {
                 impact.position = end;
                 impact.rotation = Quaternion.identity;
+                TintParticles(impact, tint);
                 PlayParticles(impact);
             }
 
@@ -163,6 +168,63 @@ namespace FluMix
             float length = Mathf.Max(0.2f, authoredBeamLength);
             float stretch = direction.magnitude / length;
             weapon.localScale = new Vector3(1f, 1f, stretch);
+        }
+
+        readonly Dictionary<int, ParticleSystem.MinMaxGradient> originalColors = new Dictionary<int, ParticleSystem.MinMaxGradient>();
+
+        static Color TintFor(HeroId hero)
+        {
+            if (hero == HeroId.A)
+                return new Color(0.2f, 1f, 0.35f, 1f);
+            if (hero == HeroId.G)
+                return new Color(1f, 0.52f, 0.05f, 1f);
+            return new Color(1f, 0.16f, 0.28f, 1f);
+        }
+
+        void TintParticles(Transform root, Color tint)
+        {
+            if (root == null)
+                return;
+
+            ParticleSystem[] systems = root.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < systems.Length; i++)
+            {
+                ParticleSystem system = systems[i];
+                int id = system.GetInstanceID();
+                if (!originalColors.TryGetValue(id, out ParticleSystem.MinMaxGradient source))
+                {
+                    source = system.main.startColor;
+                    originalColors[id] = source;
+                }
+
+                ParticleSystem.MainModule main = system.main;
+                main.startColor = Multiply(source, tint);
+            }
+        }
+
+        static ParticleSystem.MinMaxGradient Multiply(ParticleSystem.MinMaxGradient source, Color tint)
+        {
+            switch (source.mode)
+            {
+                case ParticleSystemGradientMode.TwoColors:
+                    return new ParticleSystem.MinMaxGradient(source.colorMin * tint, source.colorMax * tint);
+                case ParticleSystemGradientMode.Gradient:
+                    return new ParticleSystem.MinMaxGradient(MultiplyGradient(source.gradient, tint));
+                case ParticleSystemGradientMode.TwoGradients:
+                    return new ParticleSystem.MinMaxGradient(MultiplyGradient(source.gradientMin, tint), MultiplyGradient(source.gradientMax, tint));
+                default:
+                    return new ParticleSystem.MinMaxGradient(source.color * tint);
+            }
+        }
+
+        static Gradient MultiplyGradient(Gradient source, Color tint)
+        {
+            Gradient copy = new Gradient();
+            GradientColorKey[] colors = source.colorKeys;
+            for (int i = 0; i < colors.Length; i++)
+                colors[i].color *= tint;
+            copy.SetKeys(colors, source.alphaKeys);
+            return copy;
         }
 
         static Vector3 ShortEnd(Vector3 start, Vector3 end)
