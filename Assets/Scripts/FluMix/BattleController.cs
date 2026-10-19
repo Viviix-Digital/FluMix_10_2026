@@ -27,10 +27,13 @@ namespace FluMix
         [SerializeField] Sprite greenSprite;
         [SerializeField] Sprite orangeSprite;
         [SerializeField] Sprite redSprite;
+        [SerializeField] Sprite[] orangeFrames;
+        [SerializeField] Sprite[] redFrames;
         [SerializeField] bool greenUsesSheet;
         [SerializeField] ArenaStage stage;
 
         readonly List<ActiveVirus> alive = new List<ActiveVirus>();
+        Sprite[] greenFrames;
 
         bool running;
         bool paused;
@@ -116,6 +119,8 @@ namespace FluMix
         {
             if (stage == null)
                 stage = FindFirstObjectByType<ArenaStage>();
+            if (virusPrefab != null && virusPrefab.Sheet != null)
+                greenFrames = virusPrefab.Sheet.Frames;
         }
 
         void Start()
@@ -305,6 +310,7 @@ namespace FluMix
             {
                 VirusType next = OtherType(virus.view.Type);
                 Sprite sprite = SpriteFor(next);
+                PrepareSheet(virus.view, next);
                 yield return fx.PlayRetype(virus.view, () =>
                 {
                     if (virus.view != null)
@@ -359,6 +365,7 @@ namespace FluMix
             view.Bind(config);
             if (view.Sheet != null)
                 view.Sheet.AdoptConfig(config);
+            PrepareSheet(view, type);
             view.Apply(type, SpriteFor(type), UsesSheet(type));
             view.Clicked -= OnVirusClicked;
             view.Clicked += OnVirusClicked;
@@ -482,9 +489,48 @@ namespace FluMix
             }
         }
 
+        void PrepareSheet(VirusView view, VirusType type)
+        {
+            if (view == null || view.Sheet == null)
+                return;
+
+            if (type == VirusType.Green)
+            {
+                view.SetClip(0, 8, 8, 4, 0, 0);
+                if (greenFrames != null && greenFrames.Length > 0)
+                    view.Sheet.SetFrames(greenFrames, greenSprite);
+                return;
+            }
+
+            Sprite[] frames = type == VirusType.Orange ? orangeFrames : redFrames;
+            if (!HasSprite(frames))
+                return;
+
+            int hit = Mathf.Min(4, frames.Length);
+            int hitStart = Mathf.Max(0, frames.Length - hit);
+            view.SetClip(0, frames.Length, hitStart, hit, 0, 0);
+            view.Sheet.SetFrames(frames, frames[0]);
+        }
+
         bool UsesSheet(VirusType type)
         {
-            return greenUsesSheet && type == VirusType.Green;
+            if (type == VirusType.Green)
+                return greenUsesSheet;
+            Sprite[] frames = type == VirusType.Orange ? orangeFrames : redFrames;
+            return HasSprite(frames);
+        }
+
+        static bool HasSprite(Sprite[] frames)
+        {
+            if (frames == null)
+                return false;
+            for (int i = 0; i < frames.Length; i++)
+            {
+                if (frames[i] != null)
+                    return true;
+            }
+
+            return false;
         }
 
         VirusType NextSpawnType()

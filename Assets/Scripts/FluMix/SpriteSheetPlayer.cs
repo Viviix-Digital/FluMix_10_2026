@@ -20,6 +20,7 @@ namespace FluMix
         Action finished;
 
         public bool HasFrames => frames != null && frames.Length > 0;
+        public Sprite[] Frames => frames;
 
         public void AdoptConfig(GameConfig gameConfig)
         {
