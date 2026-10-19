@@ -190,6 +190,8 @@ namespace FluMix
                 fxRoot = (RectTransform)fx;
             }
 
+            scoreRoot = fxRoot;
+
             if (beam == null)
             {
                 beam = FluMixUi.CreateImage(fxRoot, "Beam", beamA, new Vector2(100f, config != null ? config.beamThickness : 72f), false);
@@ -353,6 +355,8 @@ namespace FluMix
 
         public IEnumerator PlayWarning()
         {
+            FluMixSfx.Play("warning_alarm");
+            FluMixSfx.Play("stinger_sos");
             if (darken != null)
             {
                 darken.transform.SetAsLastSibling();
@@ -422,29 +426,42 @@ namespace FluMix
                 darken.color = new Color(0f, 0f, 0f, 0f);
         }
 
-        public IEnumerator PlayBossEnter()
+        public IEnumerator PlayBossEnter(Vector2? spawn)
         {
             if (boss == null)
                 yield break;
 
+            Vector2 home = bossRest.sqrMagnitude > 0.01f ? bossRest : boss.anchoredPosition;
+            Vector2 from = spawn ?? home + Vector2.left * 820f;
             boss.gameObject.SetActive(true);
             boss.SetAsLastSibling();
             if (bossGroup != null)
                 bossGroup.alpha = 1f;
-            boss.localScale = Vector3.one * config.bossEnterScale;
+            boss.anchoredPosition = from;
+            boss.localScale = Vector3.one * 0.86f;
+            bossShaking = false;
+            if (bossSheet != null && bossSheet.HasFrames)
+            {
+                if (bossIdleCount > 0)
+                    bossSheet.PlayRange(bossIdleStart, bossIdleCount, true, null);
+                else
+                    bossSheet.PlayLoop();
+            }
+
+            float enter = config.bossEnterSeconds > 0.2f ? config.bossEnterSeconds : 2.6f;
             float elapsed = 0f;
-            while (elapsed < config.warningPopSeconds)
+            while (elapsed < enter)
             {
                 elapsed += Time.deltaTime;
-                float u = Mathf.Clamp01(elapsed / config.warningPopSeconds);
-                boss.localScale = Vector3.one * Mathf.Lerp(config.bossEnterScale, 1f, EaseOutBack(u));
+                float u = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / enter));
+                boss.anchoredPosition = Vector2.Lerp(from, home, u);
+                boss.localScale = Vector3.one * Mathf.Lerp(0.86f, 1f, u);
                 yield return null;
             }
 
+            boss.anchoredPosition = home;
             boss.localScale = Vector3.one;
-            bossRest = boss.anchoredPosition;
-            if (bossSheet != null && bossIdleCount > 0)
-                bossSheet.PlayRange(bossIdleStart, bossIdleCount, true, null);
+            bossRest = home;
             bossShaking = true;
         }
 
@@ -559,40 +576,21 @@ namespace FluMix
 
         public IEnumerator PlayWinShield()
         {
-            if (winShield == null)
+            if (winShield != null)
+                winShield.gameObject.SetActive(false);
+
+            FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
+            if (shots == null)
                 yield break;
 
-            winShield.transform.SetAsLastSibling();
-            winShield.gameObject.SetActive(true);
-            bool hasSheet = winSheet != null && winSheet.HasFrames;
-            if (hasSheet)
-                winSheet.PlayLoop();
-
-            float elapsed = 0f;
-            float sway = 0f;
-            while (elapsed < config.winShieldDuration)
-            {
-                elapsed += Time.deltaTime;
-                float u = Mathf.Clamp01(elapsed / config.winShieldDuration);
-                float scale = u < 0.65f
-                    ? Mathf.Lerp(config.winShieldStartScale, config.winShieldPeakScale, u / 0.65f)
-                    : Mathf.Lerp(config.winShieldPeakScale, 1f, (u - 0.65f) / 0.35f);
-                winShield.rectTransform.localScale = Vector3.one * scale;
-                if (!hasSheet)
-                {
-                    sway += Time.deltaTime;
-                    float angle = Mathf.Sin(sway * 3f) * config.winShieldSwayDegrees;
-                    winShield.rectTransform.localEulerAngles = new Vector3(0f, 0f, angle);
-                }
-
-                yield return null;
-            }
-
-            winShield.rectTransform.localScale = Vector3.one;
+            yield return shots.PlayWinRoutine();
         }
 
         public void HideWinShield()
         {
+            FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
+            if (shots != null)
+                shots.HideWin();
             if (winSheet != null)
                 winSheet.Stop();
             if (winShield != null)
@@ -648,7 +646,7 @@ namespace FluMix
             }
         }
 
-        public IEnumerator PlayBeam(HeroId hero, Vector2 from, Vector2 to, bool connect)
+        public IEnumerator PlayBeam(HeroId hero, Vector2 from, Vector2 to, bool connect, Vector3 worldFrom, Vector3 worldTo)
         {
             if (beam == null)
                 yield break;
@@ -661,6 +659,16 @@ namespace FluMix
             float travel = connect ? distance : Mathf.Max(config.beamThickness, distance - config.wrongBeamGap);
             float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             float aligned = angle - config.beamArtAngle;
+            Vector2 endPoint = from + direction.normalized * travel;
+            FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
+            if (shots == null)
+                shots = FindAnyObjectByType<FluMixShotVfx>();
+            if (shots != null)
+            {
+                Vector3 start = worldFrom.sqrMagnitude > 0.01f ? worldFrom : arena != null ? arena.TransformPoint(from) : worldFrom;
+                Vector3 finish = worldTo.sqrMagnitude > 0.01f ? worldTo : arena != null ? arena.TransformPoint(endPoint) : worldTo;
+                shots.PlayShot(hero, start, finish, connect);
+            }
 
             beam.sprite = SpriteFor(hero);
             beam.gameObject.SetActive(true);
@@ -687,7 +695,7 @@ namespace FluMix
                 yield return null;
             }
 
-            Vector2 end = from + direction.normalized * travel;
+            Vector2 end = endPoint;
             yield return PlayImpact(end, angle);
             beam.gameObject.SetActive(false);
         }
@@ -726,18 +734,14 @@ namespace FluMix
 
             var view = virus;
             view.PlayHit();
-            Image flash = virus.Flash;
-            RectTransform rect = virus.Rect;
-            Quaternion start = rect.localRotation;
+            FluMixSfx.Play("virus_evolve");
+            Color previous = virus.Tint;
             float elapsed = 0f;
             while (virus != null && elapsed < config.whiteFlashSeconds)
             {
                 elapsed += Time.deltaTime;
                 float u = Mathf.Clamp01(elapsed / config.whiteFlashSeconds);
-                if (flash != null)
-                    flash.color = new Color(1f, 1f, 1f, Mathf.Sin(u * Mathf.PI));
-                float turn = Mathf.Sin(u * Mathf.PI) * config.virusRetypeDegrees;
-                rect.localRotation = start * Quaternion.Euler(0f, 0f, turn);
+                virus.SetTint(Color.Lerp(previous, Color.white, Mathf.Sin(u * Mathf.PI)));
                 yield return null;
             }
 
@@ -745,10 +749,8 @@ namespace FluMix
                 yield break;
 
             swap?.Invoke();
-            if (flash != null)
-                flash.color = new Color(1f, 1f, 1f, 0f);
-            rect.localRotation = start;
-            yield return PulseRing(virus);
+            virus.SetTint(Color.white);
+            virus.Rect.localScale = Vector3.one;
         }
 
         public void ShowWrongMark(Vector2 position)
@@ -761,8 +763,47 @@ namespace FluMix
             StartCoroutine(HideAfter(wrongMark.gameObject, config.wrongMarkSeconds));
         }
 
+        RectTransform scoreRoot;
+
         public void PlayScorePopup(int delta, Vector2 position)
         {
+            ShowScore(delta, position);
+        }
+
+        public void PlayScorePopup(int delta, Vector3 world)
+        {
+            if (scoreRoot == null || world.sqrMagnitude < 0.01f)
+            {
+                ShowScore(delta, Vector2.zero);
+                return;
+            }
+
+            Canvas canvas = scoreRoot.GetComponentInParent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? (canvas.worldCamera != null ? canvas.worldCamera : Camera.main)
+                : null;
+            Camera projector = cam != null ? cam : Camera.main;
+            if (projector == null)
+            {
+                ShowScore(delta, Vector2.zero);
+                return;
+            }
+
+            Vector3 screen = projector.WorldToScreenPoint(world);
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(scoreRoot, screen, cam, out Vector2 local))
+            {
+                ShowScore(delta, Vector2.zero);
+                return;
+            }
+
+            ShowScore(delta, local);
+        }
+
+        void ShowScore(int delta, Vector2 position)
+        {
+            if (config == null)
+                return;
+
             Sprite sprite = delta >= config.correctQuestionScore ? plus200
                 : delta > 0 ? plus100
                 : minus50;
@@ -772,7 +813,7 @@ namespace FluMix
             Image popup = null;
             for (int i = 0; i < popups.Count; i++)
             {
-                if (!popups[i].gameObject.activeSelf)
+                if (popups[i] != null && !popups[i].gameObject.activeSelf)
                 {
                     popup = popups[i];
                     break;
@@ -784,12 +825,22 @@ namespace FluMix
             if (popup == null)
                 return;
 
+            Transform parent = scoreRoot != null ? scoreRoot : arena;
+            if (parent == null)
+                return;
+
+            popup.rectTransform.SetParent(parent, false);
             popup.sprite = sprite;
+            popup.preserveAspect = true;
+            popup.raycastTarget = false;
             popup.color = Color.white;
-            popup.rectTransform.sizeDelta = new Vector2(config.scorePopupSize, config.scorePopupSize * 0.5f);
+            float height = config.scorePopupSize > 1f ? config.scorePopupSize * 1.35f : 240f;
+            popup.rectTransform.sizeDelta = new Vector2(height * 2.15f, height);
+            popup.rectTransform.localScale = Vector3.one;
+            popup.rectTransform.anchoredPosition = position + new Vector2(0f, 90f);
             popup.gameObject.SetActive(true);
             popup.rectTransform.SetAsLastSibling();
-            StartCoroutine(FloatPopup(popup, position));
+            StartCoroutine(FloatPopup(popup, popup.rectTransform.anchoredPosition));
         }
 
         public void Shake()

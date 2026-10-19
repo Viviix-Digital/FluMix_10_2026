@@ -9,8 +9,10 @@ namespace FluMix
         class ActiveVirus
         {
             public VirusView view;
-            public float progress;
             public int lane;
+            public int cell;
+            public float stepTimer;
+            public float slide;
             public bool dying;
         }
 
@@ -136,16 +138,33 @@ namespace FluMix
             if (!running || paused || config == null)
                 return;
 
-            float step = Time.deltaTime / Mathf.Max(0.01f, config.virusMoveSeconds);
+            float stepWait = config.virusStepSeconds > 0.1f ? config.virusStepSeconds : 2.8f;
+            float slideTime = config.virusStepSlideSeconds > 0.05f ? config.virusStepSlideSeconds : 0.45f;
+            int cells = config.virusCellCount > 1 ? config.virusCellCount : 8;
             for (int i = alive.Count - 1; i >= 0; i--)
             {
                 ActiveVirus virus = alive[i];
                 if (virus.dying || virus.view == null)
                     continue;
 
-                virus.progress += step;
-                PlaceVirus(virus);
-                if (virus.progress >= 1f)
+                if (virus.slide < 1f && virus.cell > 0)
+                {
+                    virus.slide = Mathf.Min(1f, virus.slide + Time.deltaTime / slideTime);
+                }
+                else
+                {
+                    virus.stepTimer += Time.deltaTime;
+                    if (virus.stepTimer >= stepWait)
+                    {
+                        virus.stepTimer = 0f;
+                        virus.cell++;
+                        virus.slide = 0f;
+                    }
+                }
+
+                float along = (Mathf.Max(0, virus.cell - 1) + (virus.cell > 0 ? virus.slide : 0f)) / cells;
+                PlaceVirus(virus, Mathf.Clamp01(along));
+                if (virus.cell >= cells && virus.slide >= 1f)
                     StartCoroutine(ResolveWall(virus));
             }
         }
@@ -170,6 +189,9 @@ namespace FluMix
             running = false;
             paused = true;
             inputLocked = false;
+            armed = null;
+            if (stage != null)
+                stage.SetArmed(null);
             SetHeroesInteractable(false);
             ClearViruses();
         }
@@ -192,7 +214,8 @@ namespace FluMix
             if (alive.Count == 0)
                 return;
             ActiveVirus virus = alive[0];
-            virus.progress = 1f;
+            virus.cell = config != null && config.virusCellCount > 1 ? config.virusCellCount : 8;
+            virus.slide = 1f;
             if (!virus.dying)
                 StartCoroutine(ResolveWall(virus));
         }
@@ -203,15 +226,44 @@ namespace FluMix
                 EnsurePopulation();
         }
 
+        HeroView armed;
+        int virusClickFrame = -1;
+
         void OnHeroClicked(HeroView hero)
         {
-            if (!running || paused || inputLocked || hero == null || alive.Count == 0)
+            if (!running || paused || inputLocked || hero == null)
                 return;
 
-            ActiveVirus virus = FrontVirus();
-            if (virus == null || virus.dying)
+            armed = armed == hero ? null : hero;
+            if (stage != null)
+                stage.SetArmed(armed != null ? armed.Id : (HeroId?)null);
+        }
+
+        public void OnVirusClicked(VirusView view)
+        {
+            if (!running || paused || inputLocked || armed == null || view == null)
+                return;
+            if (virusClickFrame == Time.frameCount)
+                return;
+            virusClickFrame = Time.frameCount;
+
+            ActiveVirus virus = null;
+            for (int i = 0; i < alive.Count; i++)
+            {
+                if (alive[i].view == view && !alive[i].dying)
+                {
+                    virus = alive[i];
+                    break;
+                }
+            }
+
+            if (virus == null)
                 return;
 
+            HeroView hero = armed;
+            armed = null;
+            if (stage != null)
+                stage.SetArmed(null);
             bool correct = config.HeroFor(virus.view.Type) == hero.Id;
             StartCoroutine(ResolveShot(hero, virus, correct));
         }
@@ -228,13 +280,15 @@ namespace FluMix
             else
                 StartCoroutine(fx.HeroRecoil(hero.GetComponent<RectTransform>()));
 
+            Vector3 worldFrom = stage != null && stage.Ready ? stage.HeroWorld(hero.Id) : Vector3.zero;
+            Vector3 worldTo = stage != null && stage.Ready ? stage.LanePoint(virus.lane, ProgressOf(virus)) : Vector3.zero;
             Vector2 from = fx.ArenaPoint(hero.Muzzle);
             Vector2 to = virus.view.Rect.anchoredPosition;
             int delta = correct ? config.correctHeroScore : config.wrongHeroScore;
             score.Add(delta);
-
-            yield return fx.PlayBeam(hero.Id, from, to, correct);
             fx.PlayScorePopup(delta, to);
+
+            yield return fx.PlayBeam(hero.Id, from, to, correct, worldFrom, worldTo);
 
             if (correct)
             {
@@ -248,7 +302,6 @@ namespace FluMix
             }
             else if (virus.view != null)
             {
-                fx.ShowWrongMark(MissPoint(from, to));
                 VirusType next = OtherType(virus.view.Type);
                 Sprite sprite = SpriteFor(next);
                 yield return fx.PlayRetype(virus.view, () =>
@@ -268,6 +321,7 @@ namespace FluMix
                 yield break;
 
             virus.dying = true;
+            FluMixSfx.Play("virus_leak");
             score.Add(config.virusReachScore);
             fx.PlayScorePopup(config.virusReachScore, virus.view.Rect.anchoredPosition);
             virus.view.Pulse = false;
@@ -285,14 +339,19 @@ namespace FluMix
             {
                 VirusType type = pendingSpawn ?? NextSpawnType();
                 pendingSpawn = null;
-                SpawnOne(type);
+                if (!SpawnOne(type))
+                    break;
             }
         }
 
-        void SpawnOne(VirusType type)
+        bool SpawnOne(VirusType type)
         {
             if (virusPrefab == null || arena == null)
-                return;
+                return false;
+
+            int lane = FreeLane();
+            if (lane < 0)
+                return false;
 
             VirusView view = Instantiate(virusPrefab, arena);
             view.gameObject.SetActive(true);
@@ -300,32 +359,73 @@ namespace FluMix
             if (view.Sheet != null)
                 view.Sheet.AdoptConfig(config);
             view.Apply(type, SpriteFor(type), UsesSheet(type));
-            int lane = alive.Count;
-            int target = Mathf.Max(1, config != null ? config.simultaneousViruses : 1);
+            view.Clicked -= OnVirusClicked;
+            view.Clicked += OnVirusClicked;
+            FluMixSfx.Play("virus_spawn");
             var active = new ActiveVirus
             {
                 view = view,
                 lane = lane,
-                progress = target > 1 ? Mathf.Repeat(lane * 0.18f, 0.42f) : 0f
+                cell = 0,
+                slide = 1f
             };
             view.Rect.localScale = Vector3.one;
             view.Pulse = !UsesSheet(type);
             alive.Add(active);
-            PlaceVirus(active);
+            PlaceVirus(active, 0f);
+            return true;
         }
 
-        void PlaceVirus(ActiveVirus virus)
+        int FreeLane()
+        {
+            int lanes = stage != null && stage.Ready ? stage.LaneCount : Mathf.Max(1, config != null ? config.simultaneousViruses : 3);
+            for (int lane = 0; lane < lanes; lane++)
+            {
+                bool used = false;
+                for (int i = 0; i < alive.Count; i++)
+                {
+                    if (alive[i].lane == lane && alive[i].view != null)
+                    {
+                        used = true;
+                        break;
+                    }
+                }
+
+                if (!used)
+                    return lane;
+            }
+
+            return -1;
+        }
+
+        public bool TryVirusSpawnPoint(out Vector2 local)
+        {
+            local = Vector2.zero;
+            if (stage == null || !stage.Ready)
+                return false;
+
+            int lane = stage.LaneCount > 1 ? 1 : 0;
+            return stage.Project(stage.LanePoint(lane, 0f), out local);
+        }
+
+        void PlaceVirus(ActiveVirus virus, float progress)
         {
             if (virus == null || virus.view == null)
                 return;
 
             if (stage != null && stage.Ready)
             {
-                stage.PlaceVirus(virus.view, stage.LanePoint(virus.lane, virus.progress));
+                stage.PlaceVirus(virus.view, stage.LanePoint(virus.lane, progress));
                 return;
             }
 
-            virus.view.Rect.anchoredPosition = Vector2.Lerp(Point(spawnPoint, virus.lane), Point(wallPoint, virus.lane), Mathf.Clamp01(virus.progress));
+            virus.view.Rect.anchoredPosition = Vector2.Lerp(Point(spawnPoint, virus.lane), Point(wallPoint, virus.lane), Mathf.Clamp01(progress));
+        }
+
+        float ProgressOf(ActiveVirus virus)
+        {
+            int cells = config != null && config.virusCellCount > 1 ? config.virusCellCount : 8;
+            return Mathf.Clamp01((Mathf.Max(0, virus.cell - 1) + (virus.cell > 0 ? virus.slide : 0f)) / cells);
         }
 
         void Remove(ActiveVirus virus)
@@ -357,7 +457,7 @@ namespace FluMix
             {
                 if (alive[i].dying)
                     continue;
-                if (best == null || alive[i].progress > best.progress)
+                if (best == null || alive[i].cell > best.cell)
                     best = alive[i];
             }
 
@@ -369,16 +469,6 @@ namespace FluMix
             Vector2 origin = anchor != null ? anchor.anchoredPosition : Vector2.zero;
             float offset = (lane - (Mathf.Max(1, config.simultaneousViruses) - 1) * 0.5f) * config.laneSpacing;
             return origin + new Vector2(0f, offset);
-        }
-
-        Vector2 MissPoint(Vector2 from, Vector2 to)
-        {
-            Vector2 direction = to - from;
-            float distance = direction.magnitude;
-            if (distance < 1f)
-                return to;
-            float travel = Mathf.Max(config.beamThickness, distance - config.wrongBeamGap);
-            return from + direction.normalized * travel;
         }
 
         Sprite SpriteFor(VirusType type)

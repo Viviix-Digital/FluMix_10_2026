@@ -30,6 +30,7 @@ namespace FluMix
 
         public void Continue()
         {
+            FluMixSfx.Play("ui_confirm");
             if (flow != null)
                 flow.StartRound();
         }

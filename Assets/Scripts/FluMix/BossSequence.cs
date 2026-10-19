@@ -27,6 +27,7 @@ namespace FluMix
         bool acceptAnswer;
         int pickedIndex = -2;
         bool bannerEndsRound;
+        bool bannerDismissed;
 
         public void AdoptConfig(GameConfig gameConfig)
         {
@@ -72,6 +73,7 @@ namespace FluMix
             fx.HideWinBanner();
             fx.HideBoss();
             presenter.HideAll();
+            bannerDismissed = true;
             if (bannerEndsRound || flow.IsRoundOver)
                 flow.EndRound();
             else
@@ -101,6 +103,7 @@ namespace FluMix
             running = true;
             acceptAnswer = false;
             pickedIndex = -2;
+            bannerDismissed = false;
             battle.SetPaused(true);
             flow.SetTimerPaused(config.pauseRoundTimerDuringBoss);
             flow.SetScreen(FluMixScreen.Warning);
@@ -109,7 +112,10 @@ namespace FluMix
             fx.HideWarning();
 
             flow.SetScreen(FluMixScreen.BossIntro);
-            yield return fx.PlayBossEnter();
+            Vector2? spawn = null;
+            if (battle != null && battle.TryVirusSpawnPoint(out Vector2 spawnPoint))
+                spawn = spawnPoint;
+            yield return fx.PlayBossEnter(spawn);
 
             QuestionData[] bank = services.Questions.LoadAll();
             QuestionData question = presenter.TakeNext(bank);
@@ -160,12 +166,13 @@ namespace FluMix
             if (correct)
             {
                 score.Add(config.correctQuestionScore);
-                yield return fx.PlayBossDefeat();
+                fx.HideBoss();
                 yield return fx.PlayWinShield();
-                fx.PlayConfetti();
                 fx.PlayScorePopup(config.correctQuestionScore, Vector2.zero);
                 bannerEndsRound = flow.IsRoundOver;
                 fx.ShowWinBanner(bannerEndsRound);
+                while (!bannerDismissed)
+                    yield return null;
             }
             else
             {

@@ -120,6 +120,7 @@ namespace FluMix
                 return;
             locked = true;
             SetButtons(false);
+            FluMixSfx.Play("quiz_select");
             picked?.Invoke(index);
         }
 
@@ -138,7 +139,11 @@ namespace FluMix
             {
                 explanation.gameObject.SetActive(true);
                 explanation.text = question.explanation;
+                FluMixSfx.Play("quiz_explain");
             }
+
+            if (pickedIndex >= 0 && pickedIndex != question.correctIndex)
+                FluMixSfx.Play("quiz_wrong");
 
             float hold = config != null ? config.explainHoldSeconds : 0f;
             if (hold > 0f)

@@ -91,16 +91,19 @@ namespace FluMix
             string pass = password != null ? password.text : string.Empty;
             if (services != null && services.Players.TryLogin(user, pass, out PlayerRecord player))
             {
+                FluMixSfx.Play("ui_confirm");
                 flow.OnLoggedIn(player);
                 return;
             }
 
+            FluMixSfx.Play("ui_deny");
             StartCoroutine(Shake());
         }
 
         public void TogglePassword()
         {
             passwordHidden = !passwordHidden;
+            FluMixSfx.Play("input_password");
             ApplyPasswordMode();
         }
 

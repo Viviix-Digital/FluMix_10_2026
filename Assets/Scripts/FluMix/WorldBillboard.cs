@@ -9,6 +9,8 @@ namespace FluMix
         float requestedHeight = 1.6f;
         bool fitted;
 
+        public VirusView ClickTarget { get; set; }
+
         public void Prepare(float worldHeight, Sprite sprite)
         {
             requestedHeight = worldHeight > 0f ? worldHeight : requestedHeight;
@@ -33,11 +35,10 @@ namespace FluMix
             if (sprite != null)
             {
                 spriteRenderer.sprite = sprite;
-                if (!fitted)
-                    Fit(requestedHeight, sprite);
+                Fit(requestedHeight, sprite);
             }
 
-            float pulse = Mathf.Max(0.01f, Mathf.Max(Mathf.Abs(uiScale.x), Mathf.Abs(uiScale.y)));
+            float pulse = 1f;
             transform.localScale = Vector3.one * (fit * pulse);
             if (view != null)
             {
@@ -48,6 +49,23 @@ namespace FluMix
             }
 
             spriteRenderer.color = tint;
+        }
+
+        public bool HitScreen(Camera cam, Vector2 screen)
+        {
+            if (ClickTarget == null || spriteRenderer == null || cam == null || !spriteRenderer.enabled)
+                return false;
+
+            Bounds world = spriteRenderer.bounds;
+            Vector3 center = cam.WorldToScreenPoint(world.center);
+            if (center.z <= 0f)
+                return false;
+
+            Vector3 right = cam.WorldToScreenPoint(world.center + new Vector3(world.extents.x, 0f, 0f));
+            Vector3 up = cam.WorldToScreenPoint(world.center + new Vector3(0f, world.extents.y, 0f));
+            float halfWidth = Mathf.Max(36f, Mathf.Abs(right.x - center.x));
+            float halfHeight = Mathf.Max(36f, Mathf.Abs(up.y - center.y));
+            return Mathf.Abs(screen.x - center.x) <= halfWidth && Mathf.Abs(screen.y - center.y) <= halfHeight;
         }
 
         void Fit(float worldHeight, Sprite sprite)

@@ -38,6 +38,10 @@ namespace FluMix
         public float bossCountdownStep = 1f;
         public float explainHoldSeconds = 1.2f;
         public float virusMoveSeconds = 8f;
+        public float virusStepSeconds = 2.8f;
+        public float virusStepSlideSeconds = 0.45f;
+        public int virusCellCount = 8;
+        public float bossEnterSeconds = 2.6f;
         public float spawnDelay = 0.6f;
 
         public int[] bossScoreMilestones = { 1000, 2000, 5000, 10000 };

@@ -6,23 +6,8 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/FluMix/Scenes/Boot.unity
-    guid: e99adcedcc14d8746a7d9ae89a88b012
-  - enabled: 1
-    path: Assets/FluMix/Scenes/Login.unity
-    guid: fbc8e82ededcf704e92dc26ff57e7b64
-  - enabled: 1
-    path: Assets/FluMix/Scenes/Lobby.unity
-    guid: ff82d9822cc00ad449d4562f890b02fb
-  - enabled: 1
-    path: Assets/FluMix/Scenes/HowToPlay.unity
-    guid: 89e3cf668c52ae44eb38eb026eeba57b
-  - enabled: 1
-    path: Assets/FluMix/Scenes/Battle.unity
-    guid: b9d498ade7df207418eb66702023b116
-  - enabled: 1
-    path: Assets/FluMix/Scenes/Leaderboard.unity
-    guid: 50d23af649023f24298f37355d7a5081
+    path: Assets/Scenes/FluMix.unity
+    guid: 0bd70a4b382b9e140a61625f3bd235ef
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

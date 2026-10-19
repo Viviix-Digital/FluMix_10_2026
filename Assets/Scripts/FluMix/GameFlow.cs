@@ -38,6 +38,7 @@ namespace FluMix
         int lastRank;
         int questionsAnswered;
         int questionsCorrect;
+        int lastTickSecond = -1;
 
         public GameConfig Config => config;
         public FluMixScreen Screen { get; private set; }
@@ -114,6 +115,15 @@ namespace FluMix
                 elapsed += dt;
                 if (remaining < 0f)
                     remaining = 0f;
+                int second = Mathf.CeilToInt(remaining);
+                if (second != lastTickSecond)
+                {
+                    if (second > 0 && second <= 5)
+                        FluMixSfx.Play("timer_tick");
+                    if (second <= 0 && lastTickSecond > 0)
+                        FluMixSfx.Play("timer_end");
+                    lastTickSecond = second;
+                }
                 RefreshHud();
                 if (remaining <= 0f)
                 {
@@ -156,9 +166,9 @@ namespace FluMix
             roundActive = true;
             submitted = false;
             lastRank = 0;
+            SetScreen(FluMixScreen.Battle);
             if (battle != null)
                 battle.BeginRound();
-            SetScreen(FluMixScreen.Battle);
             RefreshHud();
         }
 
@@ -215,6 +225,18 @@ namespace FluMix
             Screen = screen;
             if (router != null)
                 router.Show(screen);
+            bool battleMusic = screen == FluMixScreen.Battle
+                || screen == FluMixScreen.Warning
+                || screen == FluMixScreen.BossIntro
+                || screen == FluMixScreen.Question
+                || screen == FluMixScreen.BossResolve;
+            FluMixSfx.SetBattleMusic(battleMusic);
+            if (screen == FluMixScreen.Leaderboard)
+                FluMixSfx.Play("ui_page");
+            if (screen == FluMixScreen.Result)
+                FluMixSfx.Play("podium_land");
+            if (screen == FluMixScreen.Question)
+                FluMixSfx.Play("quiz_unlock");
         }
 
         public void SetTimerPaused(bool paused)

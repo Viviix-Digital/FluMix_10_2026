@@ -1,5 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace FluMix
@@ -45,6 +47,34 @@ namespace FluMix
             virusHeight = virusesTall;
         }
 
+        HeroId? armedHero;
+
+        public void SetArmed(HeroId? id)
+        {
+            armedHero = id;
+        }
+
+        public Vector3 HeroWorld(HeroId id)
+        {
+            Transform anchor = Anchor(id);
+            if (anchor == null)
+                return Vector3.zero;
+            Vector3 world = anchor.position + Vector3.up * heroLift;
+            if (view != null)
+            {
+                Vector3 toward = view.transform.position - world;
+                toward.y = 0f;
+                if (toward.sqrMagnitude > 0.01f)
+                    world += toward.normalized * 0.45f;
+            }
+
+            return world;
+        }
+
+        public int LaneCount => laneSpawn != null ? laneSpawn.Length : 0;
+
+        public Transform Model => modelRoot;
+
         public Vector3 LanePoint(int lane, float progress)
         {
             int index = Mathf.Clamp(lane, 0, laneSpawn.Length - 1);
@@ -58,11 +88,13 @@ namespace FluMix
             if (view == null || arena == null)
                 return false;
 
-            Vector3 screen = view.WorldToScreenPoint(world);
+            Camera uiCamera = UiCamera();
+            Camera projector = uiCamera != null ? uiCamera : view;
+            Vector3 screen = projector.WorldToScreenPoint(world);
             if (screen.z <= 0f)
                 return false;
 
-            return RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, screen, null, out local);
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, screen, uiCamera, out local);
         }
 
         public void LayoutHeroes(HeroView[] views)
@@ -110,11 +142,14 @@ namespace FluMix
             Sprite sprite = virus.Image != null ? virus.Image.sprite : null;
             WorldBillboard board = BoardFor(viruses, virus.GetInstanceID(), "VirusBillboard", virusHeight, sprite);
             float flash = virus.Flash != null ? virus.Flash.color.a : 0f;
-            Color tint = Color.Lerp(Color.white, new Color(1f, 0.95f, 0.9f, 1f), flash);
-            board.Present(view, world, sprite, virus.Rect.localScale, virus.Rect.localEulerAngles.z, tint);
+            Color tint = Color.Lerp(virus.Tint, Color.white, flash);
+            board.ClickTarget = virus;
+            board.Present(view, world, sprite, Vector3.one, virus.Rect.localEulerAngles.z, tint);
             HideUi(virus.Image);
+            FitVirusClick(virus, world);
             if (Project(world, out Vector2 local))
                 virus.Rect.anchoredPosition = local;
+            virus.Rect.SetAsLastSibling();
         }
 
         public void ReleaseVirus(VirusView virus)
@@ -138,6 +173,65 @@ namespace FluMix
             }
 
             viruses.Clear();
+        }
+
+        void Update()
+        {
+            TryClickVirus();
+        }
+
+        void TryClickVirus()
+        {
+            if (view == null || Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame)
+                return;
+
+            Vector2 screen = Mouse.current.position.ReadValue();
+            if (PointerHitsHero(screen))
+                return;
+
+            VirusView target = null;
+            float nearest = float.MaxValue;
+            foreach (KeyValuePair<int, WorldBillboard> pair in viruses)
+            {
+                WorldBillboard board = pair.Value;
+                if (board == null || !board.HitScreen(view, screen))
+                    continue;
+                float depth = Vector3.Distance(view.transform.position, board.transform.position);
+                if (depth >= nearest)
+                    continue;
+                nearest = depth;
+                target = board.ClickTarget;
+            }
+
+            if (target != null)
+                target.NotifyClick();
+        }
+
+        static bool PointerHitsHero(Vector2 screen)
+        {
+            if (EventSystem.current == null)
+                return false;
+
+            var data = new PointerEventData(EventSystem.current) { position = screen };
+            var results = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(data, results);
+            for (int i = 0; i < results.Count; i++)
+            {
+                if (results[i].gameObject != null && results[i].gameObject.GetComponentInParent<HeroView>() != null)
+                    return true;
+            }
+
+            return false;
+        }
+
+        Camera UiCamera()
+        {
+            if (arena == null)
+                return null;
+            Canvas canvas = arena.GetComponentInParent<Canvas>();
+            if (canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+                return null;
+            return canvas.worldCamera != null ? canvas.worldCamera : view;
         }
 
         void LateUpdate()
@@ -176,7 +270,10 @@ namespace FluMix
                         hero.GetComponent<RectTransform>().anchoredPosition = local;
                 }
 
-                board.Present(view, world, sprite, Vector3.one, 0f, Color.white);
+                Color tint = armedHero.HasValue && armedHero.Value == pair.Key
+                    ? new Color(1f, 0.92f, 0.35f, 1f)
+                    : Color.white;
+                board.Present(view, world, sprite, Vector3.one, 0f, tint);
                 index++;
             }
         }
@@ -227,16 +324,36 @@ namespace FluMix
             return board;
         }
 
+        void FitVirusClick(VirusView virus, Vector3 world)
+        {
+            if (virus == null || view == null || arena == null)
+                return;
+
+            Camera uiCamera = UiCamera();
+            Camera projector = uiCamera != null ? uiCamera : view;
+            Vector3 top = projector.WorldToScreenPoint(world + Vector3.up * (virusHeight * 0.5f));
+            Vector3 bottom = projector.WorldToScreenPoint(world - Vector3.up * (virusHeight * 0.5f));
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, top, uiCamera, out Vector2 topLocal))
+                return;
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, bottom, uiCamera, out Vector2 bottomLocal))
+                return;
+
+            float height = Mathf.Abs(topLocal.y - bottomLocal.y);
+            virus.Rect.sizeDelta = new Vector2(height, height);
+        }
+
         void FitClick(HeroView hero, Vector3 world)
         {
             if (hero == null || view == null || arena == null)
                 return;
 
-            Vector3 top = view.WorldToScreenPoint(world + Vector3.up * (heroHeight * 0.5f));
-            Vector3 bottom = view.WorldToScreenPoint(world - Vector3.up * (heroHeight * 0.5f));
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, top, null, out Vector2 topLocal))
+            Camera uiCamera = UiCamera();
+            Camera projector = uiCamera != null ? uiCamera : view;
+            Vector3 top = projector.WorldToScreenPoint(world + Vector3.up * (heroHeight * 0.5f));
+            Vector3 bottom = projector.WorldToScreenPoint(world - Vector3.up * (heroHeight * 0.5f));
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, top, uiCamera, out Vector2 topLocal))
                 return;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, bottom, null, out Vector2 bottomLocal))
+            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, bottom, uiCamera, out Vector2 bottomLocal))
                 return;
 
             float height = Mathf.Abs(topLocal.y - bottomLocal.y);
@@ -284,6 +401,8 @@ namespace FluMix
             color.a = 0f;
             image.color = color;
             image.raycastTarget = true;
+            if (image.canvasRenderer != null)
+                image.canvasRenderer.cullTransparentMesh = false;
         }
     }
 }

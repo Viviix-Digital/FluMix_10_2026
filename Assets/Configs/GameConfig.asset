@@ -89,3 +89,7 @@ MonoBehaviour:
   debugBumpScore: 1000
   debugQuickSeconds: 5
   maxDeltaTime: 0.1
+  virusStepSeconds: 2.8
+  virusStepSlideSeconds: 0.45
+  virusCellCount: 8
+  bossEnterSeconds: 2.6

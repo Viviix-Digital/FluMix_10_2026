@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -23,6 +24,7 @@ namespace FluMix
         [SerializeField] int deathCount;
 
         public bool Pulse = true;
+        public Color Tint { get; private set; } = Color.white;
         public bool UsesSheet { get; private set; }
         public bool HasHit => UsesSheet && sheet != null && sheet.HasFrames && hitCount > 0;
         public bool HasDeath => UsesSheet && sheet != null && sheet.HasFrames && deathCount > 0;
@@ -68,6 +70,39 @@ namespace FluMix
             config = gameConfig;
         }
 
+        public event Action<VirusView> Clicked;
+
+        void OnEnable()
+        {
+            if (image == null)
+                image = GetComponent<Image>();
+            Button button = GetComponent<Button>();
+            if (button == null)
+                button = gameObject.AddComponent<Button>();
+            button.targetGraphic = image;
+            if (image != null)
+                image.raycastTarget = true;
+            button.onClick.RemoveListener(HandleClick);
+            button.onClick.AddListener(HandleClick);
+        }
+
+        void OnDisable()
+        {
+            Button button = GetComponent<Button>();
+            if (button != null)
+                button.onClick.RemoveListener(HandleClick);
+        }
+
+        public void NotifyClick()
+        {
+            Clicked?.Invoke(this);
+        }
+
+        void HandleClick()
+        {
+            NotifyClick();
+        }
+
         void Awake()
         {
             if (image == null)
@@ -90,6 +125,7 @@ namespace FluMix
                 return;
 
             image.color = Color.white;
+            Tint = Color.white;
             if (playSheet && sheet != null && sheet.HasFrames)
             {
                 if (idleCount > 0)
@@ -118,6 +154,13 @@ namespace FluMix
             float wave = (Mathf.Sin(Time.time * (Mathf.PI * 2f / duration)) + 1f) * 0.5f;
             float scale = Mathf.Lerp(config.virusPulseMin, config.virusPulseMax, wave);
             Rect.localScale = baseScale * scale;
+        }
+
+        public void SetTint(Color color)
+        {
+            Tint = color;
+            if (image != null)
+                image.color = color;
         }
 
         public void SetScale(Vector3 scale)
