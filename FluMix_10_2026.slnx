@@ -50,6 +50,7 @@
   <Project Path="com.IvanMurzak.Unity.MCP.Animation.Editor.csproj" />
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.VisualScripting.SettingsProvider.Editor.csproj" />
+  <Project Path="Unity.BuildReportInspector.Editor.Mobile.csproj" />
   <Project Path="com.IvanMurzak.Unity.MCP.ParticleSystem.Editor.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Unity.ProBuilder.AssetIdRemapUtility.csproj" />
@@ -61,6 +62,7 @@
   <Project Path="Unity.AppUI.Redux.Editor.csproj" />
   <Project Path="Unity.AppUI.Undo.csproj" />
   <Project Path="com.IvanMurzak.Unity.MCP.TestFiles.csproj" />
+  <Project Path="Unity.BuildReportInspector.Editor.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.InputSystem.DocCodeSamples.csproj" />
   <Project Path="Unity.InferenceEngine.MacBLAS.csproj" />
