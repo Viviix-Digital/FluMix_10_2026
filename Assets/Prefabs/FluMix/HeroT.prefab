@@ -136,7 +136,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::FluMix.SpriteSheetPlayer
   target: {fileID: 9092742446144214180}
-  frames: []
+  frames:
+  - {fileID: 2976713604843279552, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
+  - {fileID: 2337889532497136182, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
+  - {fileID: 4512247596964206799, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
+  - {fileID: 3574783521527071139, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
+  - {fileID: 3026878221517489608, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
+  - {fileID: 2292841392725193954, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
+  - {fileID: 4251131490411646787, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
+  - {fileID: 1398325875624880024, guid: b8ab787b399fa524499ee8383fcc207a, type: 3}
   config: {fileID: 11400000, guid: b77b55f3c63ff054eb080df24bcb0259, type: 2}
   idleSprite: {fileID: 21300000, guid: 6ce686d9f9b9f0d44a42b1ae282eb834, type: 3}
 --- !u!114 &6665056899290124108
