@@ -92,8 +92,8 @@ namespace FluMix
         public float winShieldStartScale = 0.4f;
         public float winShieldPeakScale = 1.05f;
         public float winShieldSwayDegrees = 8f;
-        public int confettiCount = 24;
-        public float confettiSeconds = 1.5f;
+        public int confettiCount = 48;
+        public float confettiSeconds = 3.2f;
         public float redFlashSeconds = 0.15f;
         public float redFlashAlpha = 0.45f;
         public float shakeSeconds = 0.28f;

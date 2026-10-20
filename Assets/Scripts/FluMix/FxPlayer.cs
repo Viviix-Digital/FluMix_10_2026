@@ -7,11 +7,11 @@ using UnityEngine.UI;
 namespace FluMix
 {
     /// <summary>
-    /// Section 7 tweens. hero_a_attack and hero_g_attack are single attack sheets.
+    /// Section 7 tweens. hero_a_attack, hero_g_attack, and hero_t_attack are single attack sheets.
     /// boss_states is one 16-frame sheet: frames 0-3 idle, 4-7 attack, 8-11 defeat.
     /// virus_states is one 16-frame sheet for the green virus: frames 0-7 idle, 8-11 hit.
     /// The virus sheet has no shrink, so death still uses the scale tween.
-    /// Hero T and the win shield were not animated in this pass.
+    /// The win shield was not animated in this pass.
     /// </summary>
     public class FxPlayer : MonoBehaviour
     {
@@ -63,6 +63,7 @@ namespace FluMix
 
         readonly List<BobTarget> bobs = new List<BobTarget>();
         readonly List<Image> confetti = new List<Image>();
+        Coroutine confettiRoutine;
         readonly List<Image> popups = new List<Image>();
 
         Vector2 shakeBase;
@@ -255,7 +256,7 @@ namespace FluMix
 
             while (confetti.Count < (config != null ? config.confettiCount : 24))
             {
-                Image piece = FluMixUi.CreateImage(shakeRoot != null ? shakeRoot : fxRoot, "Confetti", FluMixUi.White, new Vector2(18f, 28f), false);
+                Image piece = FluMixUi.CreateImage(shakeRoot != null ? shakeRoot : fxRoot, "Confetti", FluMixUi.White, new Vector2(52f, 84f), false);
                 piece.gameObject.SetActive(false);
                 confetti.Add(piece);
             }
@@ -603,7 +604,9 @@ namespace FluMix
 
         public void PlayConfetti()
         {
-            StartCoroutine(ConfettiRoutine());
+            if (confettiRoutine != null)
+                StopCoroutine(confettiRoutine);
+            confettiRoutine = StartCoroutine(ConfettiRoutine());
         }
 
         public void ShowWinBanner(bool roundOver)
@@ -632,6 +635,12 @@ namespace FluMix
             if (winButtonImage != null)
                 winButtonImage.gameObject.SetActive(false);
             HideWinShield();
+            if (confettiRoutine != null)
+            {
+                StopCoroutine(confettiRoutine);
+                confettiRoutine = null;
+            }
+
             for (int i = 0; i < confetti.Count; i++)
                 confetti[i].gameObject.SetActive(false);
         }
@@ -677,9 +686,12 @@ namespace FluMix
         }
 
         RectTransform aimArrow;
-        Image aimShaft;
+        Image aimGlow;
+        Image aimCore;
+        Image aimRing;
         Image aimHead;
         static Sprite aimHeadSprite;
+        static Sprite aimGlowSprite;
 
         public IEnumerator PlayAimArrow(Vector2 origin, Vector2 target)
         {
@@ -690,20 +702,18 @@ namespace FluMix
             aimArrow.gameObject.SetActive(true);
             aimArrow.SetAsLastSibling();
             float elapsed = 0f;
-            const float seconds = 0.28f;
+            const float seconds = 0.34f;
             while (elapsed < seconds)
             {
                 elapsed += Time.deltaTime;
                 float u = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / seconds));
-                LayoutAimArrow(origin, Vector2.Lerp(origin, target, u));
-                Color color = new Color(1f, 0.95f, 0.45f, 1f);
-                aimShaft.color = color;
-                aimHead.color = color;
+                float pulse = 0.85f + 0.15f * Mathf.Sin(elapsed * 28f);
+                LayoutAimArrow(origin, Vector2.Lerp(origin, target, u), pulse);
+                float fade = u < 0.82f ? 1f : 1f - (u - 0.82f) / 0.18f;
+                TintAim(fade);
                 yield return null;
             }
 
-            LayoutAimArrow(origin, target);
-            yield return new WaitForSeconds(0.06f);
             aimArrow.gameObject.SetActive(false);
         }
 
@@ -714,31 +724,57 @@ namespace FluMix
 
             Transform parent = arena != null ? arena : scoreRoot;
             aimArrow = FluMixUi.CreateRect(parent, "AimArrow", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 0.5f));
-            aimShaft = FluMixUi.CreateImage(aimArrow, "Shaft", FluMixUi.White, new Vector2(40f, 8f), false);
-            aimShaft.rectTransform.pivot = new Vector2(0f, 0.5f);
-            aimShaft.rectTransform.anchorMin = new Vector2(0f, 0.5f);
-            aimShaft.rectTransform.anchorMax = new Vector2(0f, 0.5f);
-            aimHead = FluMixUi.CreateImage(aimArrow, "Head", AimHeadSprite(), new Vector2(28f, 28f), false);
-            aimHead.rectTransform.pivot = new Vector2(0f, 0.5f);
+            aimGlow = Shaft(aimArrow, "Glow", AimGlowSprite(), 22f);
+            aimCore = Shaft(aimArrow, "Core", FluMixUi.White, 4f);
+            aimRing = FluMixUi.CreateImage(aimArrow, "Ring", AimGlowSprite(), new Vector2(42f, 42f), false);
+            aimRing.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            aimRing.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            aimRing.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            aimHead = FluMixUi.CreateImage(aimArrow, "Head", AimHeadSprite(), new Vector2(34f, 34f), false);
+            aimHead.rectTransform.pivot = new Vector2(0.15f, 0.5f);
             aimHead.rectTransform.anchorMin = new Vector2(0f, 0.5f);
             aimHead.rectTransform.anchorMax = new Vector2(0f, 0.5f);
             aimArrow.gameObject.SetActive(false);
         }
 
-        void LayoutAimArrow(Vector2 from, Vector2 to)
+        static Image Shaft(RectTransform parent, string name, Sprite sprite, float thickness)
+        {
+            Image image = FluMixUi.CreateImage(parent, name, sprite, new Vector2(40f, thickness), false);
+            image.rectTransform.pivot = new Vector2(0f, 0.5f);
+            image.rectTransform.anchorMin = new Vector2(0f, 0.5f);
+            image.rectTransform.anchorMax = new Vector2(0f, 0.5f);
+            return image;
+        }
+
+        void LayoutAimArrow(Vector2 from, Vector2 to, float pulse)
         {
             Vector2 direction = to - from;
             float length = direction.magnitude;
             float angle = length > 0.01f ? Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg : 0f;
             aimArrow.anchoredPosition = from;
             aimArrow.localRotation = Quaternion.Euler(0f, 0f, angle);
-            const float head = 28f;
-            bool showHead = length > head + 4f;
+            const float head = 34f;
+            bool showHead = length > head + 8f;
             aimHead.enabled = showHead;
-            aimShaft.rectTransform.anchoredPosition = Vector2.zero;
-            aimShaft.rectTransform.sizeDelta = new Vector2(showHead ? length - head : length, 8f);
-            aimHead.rectTransform.anchoredPosition = new Vector2(Mathf.Max(0f, length - head), 0f);
+            aimRing.enabled = showHead;
+            float shaft = showHead ? Mathf.Max(0f, length - head * 0.55f) : length;
+            aimGlow.rectTransform.anchoredPosition = Vector2.zero;
+            aimGlow.rectTransform.sizeDelta = new Vector2(shaft, 22f * pulse);
+            aimCore.rectTransform.anchoredPosition = new Vector2(0f, 0f);
+            aimCore.rectTransform.sizeDelta = new Vector2(shaft, 4f);
+            Vector2 tip = new Vector2(length, 0f);
+            aimRing.rectTransform.anchoredPosition = tip;
+            aimRing.rectTransform.sizeDelta = new Vector2(46f * pulse, 46f * pulse);
+            aimHead.rectTransform.anchoredPosition = tip - new Vector2(8f, 0f);
             aimHead.rectTransform.sizeDelta = new Vector2(head, head);
+        }
+
+        void TintAim(float fade)
+        {
+            aimGlow.color = new Color(0.35f, 0.9f, 1f, 0.38f * fade);
+            aimCore.color = new Color(0.92f, 1f, 1f, fade);
+            aimRing.color = new Color(0.45f, 0.95f, 1f, 0.55f * fade);
+            aimHead.color = new Color(1f, 1f, 1f, fade);
         }
 
         static Sprite AimHeadSprite()
@@ -763,6 +799,31 @@ namespace FluMix
             return aimHeadSprite;
         }
 
+        static Sprite AimGlowSprite()
+        {
+            if (aimGlowSprite != null)
+                return aimGlowSprite;
+
+            const int size = 64;
+            Texture2D texture = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            Vector2 center = new Vector2((size - 1) * 0.5f, (size - 1) * 0.5f);
+            float radius = center.x;
+            for (int y = 0; y < size; y++)
+            {
+                for (int x = 0; x < size; x++)
+                {
+                    float distance = Vector2.Distance(new Vector2(x, y), center) / radius;
+                    float alpha = Mathf.Clamp01(1f - distance);
+                    alpha *= alpha;
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            texture.Apply();
+            aimGlowSprite = Sprite.Create(texture, new Rect(0f, 0f, size, size), new Vector2(0.5f, 0.5f), 100f);
+            return aimGlowSprite;
+        }
+
         public IEnumerator PlayVirusDeath(RectTransform virus)
         {
             if (virus == null)
@@ -784,10 +845,16 @@ namespace FluMix
             {
                 elapsed += Time.deltaTime;
                 float u = Mathf.Clamp01(elapsed / config.deathSeconds);
+                float vanish = 1f - Mathf.SmoothStep(0f, 1f, u);
+                if (view != null)
+                    view.Vanish = vanish;
                 virus.localScale = Vector3.Lerp(startScale, Vector3.zero, u);
                 virus.localRotation = startRot * Quaternion.Euler(0f, 0f, config.deathSpinDegrees * u);
                 yield return null;
             }
+
+            if (view != null)
+                view.Vanish = 0f;
         }
 
         public IEnumerator PlayRetype(VirusView virus, System.Action swap)
@@ -1026,15 +1093,25 @@ namespace FluMix
 
         IEnumerator ConfettiRoutine()
         {
-            int count = Mathf.Min(config.confettiCount, confetti.Count);
+            int count = config != null ? config.confettiCount : 48;
+            while (confetti.Count < count)
+            {
+                Image extra = FluMixUi.CreateImage(shakeRoot != null ? shakeRoot : scoreRoot, "Confetti", FluMixUi.White, new Vector2(52f, 84f), false);
+                extra.gameObject.SetActive(false);
+                confetti.Add(extra);
+            }
+
+            count = Mathf.Min(count, confetti.Count);
             var velocity = new Vector2[count];
             var spin = new float[count];
+            float[] launch = { -560f, -180f, 180f, 560f };
             Color[] colors =
             {
-                new Color(1f, 0.35f, 0.7f),
-                new Color(1f, 0.86f, 0.2f),
-                new Color(0.25f, 0.55f, 1f),
-                new Color(0.3f, 0.9f, 0.4f)
+                new Color(1f, 0.28f, 0.62f),
+                new Color(1f, 0.86f, 0.15f),
+                new Color(0.25f, 0.62f, 1f),
+                new Color(0.25f, 0.95f, 0.4f),
+                new Color(1f, 0.45f, 0.12f)
             };
 
             for (int i = 0; i < count; i++)
@@ -1042,29 +1119,31 @@ namespace FluMix
                 Image piece = confetti[i];
                 piece.gameObject.SetActive(true);
                 piece.transform.SetAsLastSibling();
+                piece.rectTransform.sizeDelta = new Vector2(52f, 84f);
+                piece.rectTransform.localScale = Vector3.one * Random.Range(1.1f, 1.7f);
                 piece.color = colors[i % colors.Length];
-                piece.rectTransform.anchoredPosition = Vector2.zero;
-                piece.rectTransform.localScale = Vector3.one;
-                float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                float speed = Random.Range(420f, 900f);
-                velocity[i] = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * speed;
-                velocity[i].y = Mathf.Abs(velocity[i].y) + 200f;
-                spin[i] = Random.Range(-180f, 180f);
+                float origin = launch[i % launch.Length];
+                piece.rectTransform.anchoredPosition = new Vector2(origin + Random.Range(-70f, 70f), -220f);
+                velocity[i] = new Vector2(Random.Range(-160f, 160f), Random.Range(1100f, 1700f));
+                spin[i] = Random.Range(-240f, 240f);
             }
 
+            float seconds = config != null ? config.confettiSeconds : 3.2f;
             float elapsed = 0f;
-            while (elapsed < config.confettiSeconds)
+            while (elapsed < seconds)
             {
                 float dt = Time.deltaTime;
                 elapsed += dt;
-                float u = Mathf.Clamp01(elapsed / config.confettiSeconds);
+                float u = Mathf.Clamp01(elapsed / seconds);
+                float alpha = u < 0.72f ? 1f : 1f - (u - 0.72f) / 0.28f;
                 for (int i = 0; i < count; i++)
                 {
-                    velocity[i] += Vector2.down * 1400f * dt;
+                    velocity[i] += Vector2.down * 980f * dt;
                     confetti[i].rectTransform.anchoredPosition += velocity[i] * dt;
                     confetti[i].rectTransform.Rotate(0f, 0f, spin[i] * dt);
+                    confetti[i].transform.SetAsLastSibling();
                     Color color = confetti[i].color;
-                    color.a = 1f - u;
+                    color.a = alpha;
                     confetti[i].color = color;
                 }
 
@@ -1073,6 +1152,7 @@ namespace FluMix
 
             for (int i = 0; i < count; i++)
                 confetti[i].gameObject.SetActive(false);
+            confettiRoutine = null;
         }
 
         IEnumerator SlideBanner(Vector2 rest)

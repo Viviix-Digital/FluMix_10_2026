@@ -1,3 +1,5 @@
+using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace FluMix
@@ -24,6 +26,10 @@ namespace FluMix
         [SerializeField] GameObject result;
         [SerializeField] GameObject leaderboard;
 
+        const float FadeSeconds = 0.32f;
+        bool shown;
+        readonly Dictionary<int, Coroutine> fades = new Dictionary<int, Coroutine>();
+
         public void Bind(GameObject loginRoot, GameObject rulesRoot, GameObject gameplayRoot, GameObject resultRoot, GameObject leaderboardRoot)
         {
             login = loginRoot;
@@ -41,17 +47,95 @@ namespace FluMix
                 || screen == FluMixScreen.Question
                 || screen == FluMixScreen.BossResolve;
 
-            Set(login, screen == FluMixScreen.Login);
-            Set(rules, screen == FluMixScreen.Rules);
-            Set(gameplay, battle);
-            Set(result, screen == FluMixScreen.Result);
-            Set(leaderboard, screen == FluMixScreen.Leaderboard);
+            Crossfade(login, screen == FluMixScreen.Login);
+            Crossfade(rules, screen == FluMixScreen.Rules);
+            Crossfade(gameplay, battle);
+            Crossfade(result, screen == FluMixScreen.Result);
+            Crossfade(leaderboard, screen == FluMixScreen.Leaderboard);
+            shown = true;
         }
 
-        static void Set(GameObject target, bool active)
+        void Crossfade(GameObject target, bool active)
         {
-            if (target != null && target.activeSelf != active)
-                target.SetActive(active);
+            if (target == null)
+                return;
+            if (!shown)
+            {
+                SetImmediate(target, active);
+                return;
+            }
+
+            if (active == target.activeSelf && (!active || GroupAlpha(target) > 0.99f))
+                return;
+
+            int id = target.GetInstanceID();
+            if (fades.TryGetValue(id, out Coroutine running) && running != null)
+                StopCoroutine(running);
+            fades[id] = StartCoroutine(FadeRoutine(target, active));
+        }
+
+        IEnumerator FadeRoutine(GameObject target, bool active)
+        {
+            CanvasGroup group = Group(target);
+            if (active)
+            {
+                bool wasOff = !target.activeSelf;
+                target.SetActive(true);
+                if (wasOff)
+                    group.alpha = 0f;
+                group.blocksRaycasts = false;
+                float start = group.alpha;
+                float elapsed = 0f;
+                while (elapsed < FadeSeconds)
+                {
+                    elapsed += Time.unscaledDeltaTime;
+                    group.alpha = Mathf.Lerp(start, 1f, Mathf.Clamp01(elapsed / FadeSeconds));
+                    yield return null;
+                }
+
+                group.alpha = 1f;
+                group.blocksRaycasts = true;
+                yield break;
+            }
+
+            float from = group.alpha;
+            float gone = 0f;
+            group.blocksRaycasts = false;
+            while (gone < FadeSeconds)
+            {
+                gone += Time.unscaledDeltaTime;
+                group.alpha = Mathf.Lerp(from, 0f, Mathf.Clamp01(gone / FadeSeconds));
+                yield return null;
+            }
+
+            group.alpha = 0f;
+            target.SetActive(false);
+        }
+
+        static void SetImmediate(GameObject target, bool active)
+        {
+            target.SetActive(active);
+            if (!active)
+                return;
+            CanvasGroup group = target.GetComponent<CanvasGroup>();
+            if (group == null)
+                group = target.AddComponent<CanvasGroup>();
+            group.alpha = 1f;
+            group.blocksRaycasts = true;
+        }
+
+        static float GroupAlpha(GameObject target)
+        {
+            CanvasGroup group = target.GetComponent<CanvasGroup>();
+            return group != null ? group.alpha : 1f;
+        }
+
+        static CanvasGroup Group(GameObject target)
+        {
+            CanvasGroup group = target.GetComponent<CanvasGroup>();
+            if (group == null)
+                group = target.AddComponent<CanvasGroup>();
+            return group;
         }
     }
 }

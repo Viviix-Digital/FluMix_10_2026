@@ -1,0 +1,13 @@
+{
+  "assets": [
+    {
+      "asset_id": "1343f371-4f8c-4687-9ab5-c7263d720637",
+      "label": "hero_t_attack source"
+    },
+    {
+      "asset_id": "225423c8-a219-4f5e-bdd1-6e2a81e950a1",
+      "sha12": "c97022a1f8c0",
+      "label": "hero_t_attack sheet"
+    }
+  ]
+}

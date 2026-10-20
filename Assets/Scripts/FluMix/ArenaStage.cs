@@ -25,6 +25,11 @@ namespace FluMix
         [SerializeField] float virusHeight = 1.7f;
         [SerializeField] float heroBob = 0.12f;
         [SerializeField] float heroBobSeconds = 1.6f;
+        [Header("Scale lúc animation tấn công")]
+        [Tooltip("1 là cỡ hiện tại. Chỉnh khi đang Play để xem ngay trên sân.")]
+        [SerializeField] float attackScaleA = 1f;
+        [SerializeField] float attackScaleG = 1f;
+        [SerializeField] float attackScaleT = 1f;
 
         readonly Dictionary<int, WorldBillboard> viruses = new Dictionary<int, WorldBillboard>();
         readonly Dictionary<HeroId, WorldBillboard> heroes = new Dictionary<HeroId, WorldBillboard>();
@@ -144,7 +149,7 @@ namespace FluMix
             float flash = virus.Flash != null ? virus.Flash.color.a : 0f;
             Color tint = Color.Lerp(virus.Tint, Color.white, flash);
             board.ClickTarget = virus;
-            board.Present(view, world, sprite, Vector3.one, virus.Rect.localEulerAngles.z, tint);
+            board.Present(view, world, sprite, virus.Rect.localScale, virus.Rect.localEulerAngles.z, tint);
             HideUi(virus.Image);
             FitVirusClick(virus, world);
             if (Project(world, out Vector2 local))
@@ -234,8 +239,18 @@ namespace FluMix
             return canvas.worldCamera != null ? canvas.worldCamera : view;
         }
 
+        void ApplyVirusVanish()
+        {
+            foreach (KeyValuePair<int, WorldBillboard> pair in viruses)
+            {
+                if (pair.Value != null)
+                    pair.Value.ApplyVanish();
+            }
+        }
+
         void LateUpdate()
         {
+            ApplyVirusVanish();
             if (!Ready || heroes.Count == 0)
                 return;
 
@@ -262,7 +277,8 @@ namespace FluMix
                         world += toward.normalized * 0.45f;
                 }
                 Sprite sprite = null;
-                if (heroViews.TryGetValue(pair.Key, out HeroView hero) && hero != null && hero.Image != null)
+                heroViews.TryGetValue(pair.Key, out HeroView hero);
+                if (hero != null && hero.Image != null)
                 {
                     sprite = hero.Image.sprite;
                     HideUi(hero.Image);
@@ -273,9 +289,25 @@ namespace FluMix
                 Color tint = armedHero.HasValue && armedHero.Value == pair.Key
                     ? new Color(1f, 0.92f, 0.35f, 1f)
                     : Color.white;
-                board.Present(view, world, sprite, Vector3.one, 0f, tint);
+                float attackScale = AttackScale(hero);
+                board.Present(view, world, sprite, new Vector3(attackScale, attackScale, attackScale), 0f, tint, StandingScale(hero));
                 index++;
             }
+        }
+
+        float AttackScale(HeroView hero)
+        {
+            if (hero == null || hero.Sheet == null || !hero.Sheet.IsPlaying)
+                return 1f;
+            float scale = hero.Id == HeroId.G ? attackScaleG : hero.Id == HeroId.T ? attackScaleT : attackScaleA;
+            return scale > 0.05f ? scale : 1f;
+        }
+
+        static Sprite StandingScale(HeroView hero)
+        {
+            if (hero == null || hero.Sheet == null || !hero.Sheet.IsPlaying || !hero.Sheet.HasFrames)
+                return null;
+            return hero.Sheet.Frames[0];
         }
 
         Transform Anchor(HeroId id)

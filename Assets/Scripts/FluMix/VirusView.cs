@@ -26,6 +26,7 @@ namespace FluMix
         public bool Pulse = true;
         public Color Tint { get; private set; } = Color.white;
         public bool UsesSheet { get; private set; }
+        public float Vanish { get; set; } = 1f;
         public bool HasHit => UsesSheet && sheet != null && sheet.HasFrames && hitCount > 0;
         public bool HasDeath => UsesSheet && sheet != null && sheet.HasFrames && deathCount > 0;
 
@@ -126,6 +127,7 @@ namespace FluMix
 
             image.color = Color.white;
             Tint = Color.white;
+            Vanish = 1f;
             if (playSheet && sheet != null && sheet.HasFrames)
             {
                 if (idleCount > 0)

@@ -445,6 +445,11 @@ namespace FluMix
                 Destroy(virus.view.gameObject);
         }
 
+        public void ClearField()
+        {
+            ClearViruses();
+        }
+
         void ClearViruses()
         {
             for (int i = 0; i < alive.Count; i++)
@@ -514,10 +519,10 @@ namespace FluMix
 
         bool UsesSheet(VirusType type)
         {
-            if (type == VirusType.Green)
-                return greenUsesSheet;
-            Sprite[] frames = type == VirusType.Orange ? orangeFrames : redFrames;
-            return HasSprite(frames);
+            bool sheetsReady = type == VirusType.Green
+                ? greenUsesSheet
+                : HasSprite(type == VirusType.Orange ? orangeFrames : redFrames);
+            return false && sheetsReady;
         }
 
         static bool HasSprite(Sprite[] frames)

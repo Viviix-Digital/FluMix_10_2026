@@ -92,7 +92,7 @@ namespace FluMix
             ArenaStage stage = FindAnyObjectByType<ArenaStage>();
             if (stage != null && stage.Model != null)
                 shield.SetParent(stage.Model, false);
-            shield.localPosition = new Vector3(0f, 1.95f, -11.06f);
+            shield.localPosition = new Vector3(-2.51f, -0.52f, -11.06f);
             shield.localRotation = Quaternion.identity;
             shield.localScale = Vector3.one;
             shield.gameObject.SetActive(true);

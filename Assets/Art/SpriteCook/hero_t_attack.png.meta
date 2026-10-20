@@ -140,9 +140,9 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 0
-        y: 1251
-        width: 383
-        height: 280
+        y: 1408
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -151,7 +151,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 3d6cf095880eb2460296e18aa12728c5
+      spriteID: ab824a3729cb93de0800000000000000
       internalID: 2976713604843279552
       vertices: []
       indices: 
@@ -161,10 +161,10 @@ TextureImporter:
       name: hero_t_attack_1
       rect:
         serializedVersion: 2
-        x: 394
-        y: 1251
-        width: 360
-        height: 280
+        x: 512
+        y: 1408
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -173,7 +173,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 75e7295fcead0aab895e32bc13c700b5
+      spriteID: 340dd4ec307eaaf30800000000000000
       internalID: 2337889532497136182
       vertices: []
       indices: 
@@ -183,10 +183,10 @@ TextureImporter:
       name: hero_t_attack_2
       rect:
         serializedVersion: 2
-        x: 766
-        y: 1270
-        width: 383
-        height: 243
+        x: 1024
+        y: 1408
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -195,7 +195,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 889ba6803745fdf023796dc018b29e7d
+      spriteID: 161a91892909ec1c0800000000000000
       internalID: 4512247596964206799
       vertices: []
       indices: 
@@ -205,10 +205,10 @@ TextureImporter:
       name: hero_t_attack_3
       rect:
         serializedVersion: 2
-        x: 1160
-        y: 1270
-        width: 360
-        height: 243
+        x: 1536
+        y: 1408
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -217,7 +217,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 8236a20acf548a219961acfb32a3529a
+      spriteID: 2cb2e9478c29f0ba0800000000000000
       internalID: 3574783521527071139
       vertices: []
       indices: 
@@ -228,9 +228,9 @@ TextureImporter:
       rect:
         serializedVersion: 2
         x: 0
-        y: 968
-        width: 383
-        height: 282
+        y: 768
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -239,7 +239,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6486c28118a515a2e44c2edbfd9be869
+      spriteID: cade3f739bc6c7130800000000000000
       internalID: 3026878221517489608
       vertices: []
       indices: 
@@ -249,10 +249,10 @@ TextureImporter:
       name: hero_t_attack_5
       rect:
         serializedVersion: 2
-        x: 394
-        y: 968
-        width: 360
-        height: 282
+        x: 512
+        y: 768
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -261,7 +261,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: b56d220bb64d3d899c80714f6baf5b60
+      spriteID: 35bc3c09685a1b4c0800000000000000
       internalID: 2292841392725193954
       vertices: []
       indices: 
@@ -271,10 +271,10 @@ TextureImporter:
       name: hero_t_attack_6
       rect:
         serializedVersion: 2
-        x: 766
-        y: 969
-        width: 383
-        height: 280
+        x: 1024
+        y: 768
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -283,7 +283,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 09f3335bb9911a0ab2263e220f39ddf6
+      spriteID: 85044a67042cc2150800000000000000
       internalID: 4251131490411646787
       vertices: []
       indices: 
@@ -293,10 +293,10 @@ TextureImporter:
       name: hero_t_attack_7
       rect:
         serializedVersion: 2
-        x: 1160
-        y: 969
-        width: 360
-        height: 280
+        x: 1536
+        y: 768
+        width: 512
+        height: 640
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -305,7 +305,7 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 1ff6d6a9e58a54e16bb958eb5dacb131
+      spriteID: 218f3aa38f171b970800000000000000
       internalID: 1398325875624880024
       vertices: []
       indices: 

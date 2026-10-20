@@ -2916,6 +2916,7 @@ MonoBehaviour:
   - {fileID: 155733092}
   - {fileID: 1242838131}
   - {fileID: 952634318}
+  - {fileID: 487267999}
 --- !u!114 &515293911
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3136,6 +3137,9 @@ MonoBehaviour:
   virusHeight: 1.7
   heroBob: 0.12
   heroBobSeconds: 1.6
+  attackScaleA: 1
+  attackScaleG: 1
+  attackScaleT: 1.39
 --- !u!114 &515293921
 MonoBehaviour:
   m_ObjectHideFlags: 0

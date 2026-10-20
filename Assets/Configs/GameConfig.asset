@@ -69,8 +69,8 @@ MonoBehaviour:
   winShieldStartScale: 0.4
   winShieldPeakScale: 1.05
   winShieldSwayDegrees: 8
-  confettiCount: 24
-  confettiSeconds: 1.5
+  confettiCount: 48
+  confettiSeconds: 3.2
   redFlashSeconds: 0.15
   redFlashAlpha: 0.45
   shakeSeconds: 0.28

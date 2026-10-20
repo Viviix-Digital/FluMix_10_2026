@@ -10,6 +10,10 @@ namespace FluMix
         bool fitted;
 
         public VirusView ClickTarget { get; set; }
+        float drawnFit = 1f;
+        float drawnPulse = 1f;
+        Color drawnTint = Color.white;
+        bool hasDrawn;
 
         public void Prepare(float worldHeight, Sprite sprite)
         {
@@ -26,20 +30,18 @@ namespace FluMix
             Fit(worldHeight, sprite);
         }
 
-        public void Present(Camera view, Vector3 world, Sprite sprite, Vector3 uiScale, float rollDegrees, Color tint)
+        public void Present(Camera view, Vector3 world, Sprite sprite, Vector3 uiScale, float rollDegrees, Color tint, Sprite scaleSprite = null)
         {
             if (spriteRenderer == null)
                 Prepare(1.6f, sprite);
 
             transform.position = world;
             if (sprite != null)
-            {
                 spriteRenderer.sprite = sprite;
-                Fit(requestedHeight, sprite);
-            }
+            Sprite fitted = scaleSprite != null ? scaleSprite : sprite;
+            if (fitted != null)
+                Fit(requestedHeight, fitted);
 
-            float pulse = 1f;
-            transform.localScale = Vector3.one * (fit * pulse);
             if (view != null)
             {
                 Vector3 away = world - view.transform.position;
@@ -48,7 +50,32 @@ namespace FluMix
                     transform.rotation = Quaternion.LookRotation(away, Vector3.up) * Quaternion.Euler(0f, 0f, -rollDegrees);
             }
 
-            spriteRenderer.color = tint;
+            float vanish = VanishOf();
+            float pulse = uiScale.x > 0.05f ? uiScale.x : 1f;
+            transform.localScale = Vector3.one * (fit * vanish * pulse);
+            Color color = tint;
+            color.a *= vanish;
+            spriteRenderer.color = color;
+            drawnFit = fit;
+            drawnPulse = pulse;
+            drawnTint = tint;
+            hasDrawn = true;
+        }
+
+        public void ApplyVanish()
+        {
+            if (!hasDrawn || spriteRenderer == null)
+                return;
+            float vanish = VanishOf();
+            transform.localScale = Vector3.one * (drawnFit * vanish * drawnPulse);
+            Color color = drawnTint;
+            color.a *= vanish;
+            spriteRenderer.color = color;
+        }
+
+        float VanishOf()
+        {
+            return ClickTarget != null ? Mathf.Clamp01(ClickTarget.Vanish) : 1f;
         }
 
         public bool HitScreen(Camera cam, Vector2 screen)

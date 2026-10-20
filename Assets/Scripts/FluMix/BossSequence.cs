@@ -167,6 +167,9 @@ namespace FluMix
             {
                 score.Add(config.correctQuestionScore);
                 fx.HideBoss();
+                if (battle != null)
+                    battle.ClearField();
+                fx.PlayConfetti();
                 yield return fx.PlayWinShield();
                 fx.PlayScorePopup(config.correctQuestionScore, Vector2.zero);
                 bannerEndsRound = flow.IsRoundOver;
