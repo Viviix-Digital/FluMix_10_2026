@@ -62,8 +62,7 @@ namespace FluMix
         [SerializeField] RectTransform[] bobTargets;
 
         readonly List<BobTarget> bobs = new List<BobTarget>();
-        readonly List<Image> confetti = new List<Image>();
-        Coroutine confettiRoutine;
+        Transform confettiBurst;
         readonly List<Image> popups = new List<Image>();
 
         Vector2 shakeBase;
@@ -254,13 +253,6 @@ namespace FluMix
                 popups.Add(popup);
             }
 
-            while (confetti.Count < (config != null ? config.confettiCount : 24))
-            {
-                Image piece = FluMixUi.CreateImage(shakeRoot != null ? shakeRoot : fxRoot, "Confetti", FluMixUi.White, new Vector2(52f, 84f), false);
-                piece.gameObject.SetActive(false);
-                confetti.Add(piece);
-            }
-
             HideImmediate();
             built = true;
             if (shakeRoot != null)
@@ -277,6 +269,7 @@ namespace FluMix
 
         void Start()
         {
+            SilenceConfetti();
             if (bobTargets == null)
                 return;
 
@@ -350,6 +343,7 @@ namespace FluMix
                 winButtonImage.gameObject.SetActive(false);
             if (boss != null)
                 boss.gameObject.SetActive(false);
+            StopConfetti();
             warningPulse = false;
             bossShaking = false;
         }
@@ -604,9 +598,20 @@ namespace FluMix
 
         public void PlayConfetti()
         {
-            if (confettiRoutine != null)
-                StopCoroutine(confettiRoutine);
-            confettiRoutine = StartCoroutine(ConfettiRoutine());
+            if (confettiBurst == null)
+                confettiBurst = FindConfettiBurst();
+            if (confettiBurst == null)
+                return;
+
+            confettiBurst.gameObject.SetActive(true);
+            ParticleSystem[] systems = confettiBurst.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < systems.Length; i++)
+            {
+                ParticleSystem.MainModule main = systems[i].main;
+                main.playOnAwake = false;
+                systems[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+                systems[i].Play(true);
+            }
         }
 
         public void ShowWinBanner(bool roundOver)
@@ -635,14 +640,7 @@ namespace FluMix
             if (winButtonImage != null)
                 winButtonImage.gameObject.SetActive(false);
             HideWinShield();
-            if (confettiRoutine != null)
-            {
-                StopCoroutine(confettiRoutine);
-                confettiRoutine = null;
-            }
-
-            for (int i = 0; i < confetti.Count; i++)
-                confetti[i].gameObject.SetActive(false);
+            StopConfetti();
         }
 
         public void ShowQuestion(bool visible)
@@ -1091,68 +1089,42 @@ namespace FluMix
             popup.gameObject.SetActive(false);
         }
 
-        IEnumerator ConfettiRoutine()
+        void SilenceConfetti()
         {
-            int count = config != null ? config.confettiCount : 48;
-            while (confetti.Count < count)
+            if (confettiBurst == null)
+                confettiBurst = FindConfettiBurst();
+            StopConfetti();
+        }
+
+        void StopConfetti()
+        {
+            if (confettiBurst == null)
+                return;
+
+            ParticleSystem[] systems = confettiBurst.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < systems.Length; i++)
             {
-                Image extra = FluMixUi.CreateImage(shakeRoot != null ? shakeRoot : scoreRoot, "Confetti", FluMixUi.White, new Vector2(52f, 84f), false);
-                extra.gameObject.SetActive(false);
-                confetti.Add(extra);
+                ParticleSystem.MainModule main = systems[i].main;
+                main.playOnAwake = false;
+                systems[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             }
 
-            count = Mathf.Min(count, confetti.Count);
-            var velocity = new Vector2[count];
-            var spin = new float[count];
-            float[] launch = { -560f, -180f, 180f, 560f };
-            Color[] colors =
-            {
-                new Color(1f, 0.28f, 0.62f),
-                new Color(1f, 0.86f, 0.15f),
-                new Color(0.25f, 0.62f, 1f),
-                new Color(0.25f, 0.95f, 0.4f),
-                new Color(1f, 0.45f, 0.12f)
-            };
+            confettiBurst.gameObject.SetActive(false);
+        }
 
-            for (int i = 0; i < count; i++)
+        static Transform FindConfettiBurst()
+        {
+            ParticleSystem[] systems = FindObjectsByType<ParticleSystem>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < systems.Length; i++)
             {
-                Image piece = confetti[i];
-                piece.gameObject.SetActive(true);
-                piece.transform.SetAsLastSibling();
-                piece.rectTransform.sizeDelta = new Vector2(52f, 84f);
-                piece.rectTransform.localScale = Vector3.one * Random.Range(1.1f, 1.7f);
-                piece.color = colors[i % colors.Length];
-                float origin = launch[i % launch.Length];
-                piece.rectTransform.anchoredPosition = new Vector2(origin + Random.Range(-70f, 70f), -220f);
-                velocity[i] = new Vector2(Random.Range(-160f, 160f), Random.Range(1100f, 1700f));
-                spin[i] = Random.Range(-240f, 240f);
+                Transform cursor = systems[i].transform;
+                while (cursor.parent != null)
+                    cursor = cursor.parent;
+                if (cursor.name == "Confetti")
+                    return cursor;
             }
 
-            float seconds = config != null ? config.confettiSeconds : 3.2f;
-            float elapsed = 0f;
-            while (elapsed < seconds)
-            {
-                float dt = Time.deltaTime;
-                elapsed += dt;
-                float u = Mathf.Clamp01(elapsed / seconds);
-                float alpha = u < 0.72f ? 1f : 1f - (u - 0.72f) / 0.28f;
-                for (int i = 0; i < count; i++)
-                {
-                    velocity[i] += Vector2.down * 980f * dt;
-                    confetti[i].rectTransform.anchoredPosition += velocity[i] * dt;
-                    confetti[i].rectTransform.Rotate(0f, 0f, spin[i] * dt);
-                    confetti[i].transform.SetAsLastSibling();
-                    Color color = confetti[i].color;
-                    color.a = alpha;
-                    confetti[i].color = color;
-                }
-
-                yield return null;
-            }
-
-            for (int i = 0; i < count; i++)
-                confetti[i].gameObject.SetActive(false);
-            confettiRoutine = null;
+            return null;
         }
 
         IEnumerator SlideBanner(Vector2 rest)
