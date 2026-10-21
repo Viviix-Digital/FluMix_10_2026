@@ -461,13 +461,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 410087039}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.8200731, y: -0.021437684, z: 0.03078742, w: 0.5710277}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalRotation: {x: 0.9182133, y: -0.014803138, z: 0.034471825, w: 0.39430574}
+  m_LocalPosition: {x: 713.32, y: 529.16, z: -12.39}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 110.3, y: -4.3, z: 0}
+  m_LocalEulerAnglesHint: {x: 133.52, y: -4.3, z: 0}
 --- !u!114 &410087042
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2735,6 +2735,10 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 1628924214}
+    - target: {fileID: 488474797726553835, guid: 5d4ab48f43f5eb24385ce13768ceb1bf, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 511873084800445280, guid: 5d4ab48f43f5eb24385ce13768ceb1bf, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -2815,6 +2819,10 @@ PrefabInstance:
       propertyPath: m_Sprite
       value: 
       objectReference: {fileID: 1628924214}
+    - target: {fileID: 5796617987159373287, guid: 5d4ab48f43f5eb24385ce13768ceb1bf, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 5812708733334582561, guid: 5d4ab48f43f5eb24385ce13768ceb1bf, type: 3}
       propertyPath: m_Sprite
       value: 
