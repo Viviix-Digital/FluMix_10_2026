@@ -12,8 +12,6 @@ namespace FluMix
         [SerializeField] Button button;
         [SerializeField] RectTransform muzzle;
         [SerializeField] SpriteSheetPlayer sheet;
-        [Header("Vùng chạm")]
-        [SerializeField] float touchInset = 72f;
 
         public HeroId Id => id;
         public Image Image => image;
@@ -43,23 +41,6 @@ namespace FluMix
                 button = GetComponent<Button>();
             if (sheet == null)
                 sheet = GetComponent<SpriteSheetPlayer>();
-            ApplyTouchInset();
-        }
-
-        void OnValidate()
-        {
-            ApplyTouchInset();
-        }
-
-        void ApplyTouchInset()
-        {
-            if (image == null)
-                image = GetComponent<Image>();
-            if (image == null)
-                return;
-
-            float inset = Mathf.Max(0f, touchInset);
-            image.raycastPadding = new Vector4(inset, inset, inset, inset);
         }
 
         void OnEnable()
@@ -132,12 +113,14 @@ namespace FluMix
             if (rect == null)
                 return;
 
+            if (image == null)
+                image = GetComponent<Image>();
+            Vector4 pad = image != null ? image.raycastPadding : Vector4.zero;
             Rect area = rect.rect;
-            float inset = Mathf.Max(0f, touchInset);
-            area.xMin += inset;
-            area.xMax -= inset;
-            area.yMin += inset;
-            area.yMax -= inset;
+            area.xMin += pad.x;
+            area.yMin += pad.y;
+            area.xMax -= pad.z;
+            area.yMax -= pad.w;
 
             Vector3 Corner(float x, float y)
             {
