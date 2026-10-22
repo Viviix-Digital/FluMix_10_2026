@@ -156,6 +156,7 @@ namespace FluMix
             bool correct = question != null && !timedOut && chosen == question.correctIndex;
 
             yield return presenter.Reveal(question, chosen);
+            yield return presenter.ShowAnswerDescription(question, chosen);
             fx.ShowQuestion(false);
             presenter.HideAll();
 

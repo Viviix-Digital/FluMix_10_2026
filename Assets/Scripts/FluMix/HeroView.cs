@@ -1,10 +1,11 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace FluMix
 {
-    public class HeroView : MonoBehaviour
+    public class HeroView : MonoBehaviour, IPointerDownHandler, IPointerUpHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         [SerializeField] HeroId id;
         [SerializeField] Image image;
@@ -18,6 +19,9 @@ namespace FluMix
         public SpriteSheetPlayer Sheet =>
             sheet != null ? sheet : (sheet = GetComponent<SpriteSheetPlayer>());
         public event Action<HeroView> Clicked;
+        public event Action<HeroView, PointerEventData> AimBegan;
+        public event Action<HeroView, PointerEventData> AimMoved;
+        public event Action<HeroView, PointerEventData> AimEnded;
 
         public void Bind(HeroId heroId, RectTransform muzzlePoint)
         {
@@ -60,6 +64,31 @@ namespace FluMix
         void HandleClick()
         {
             Clicked?.Invoke(this);
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            AimBegan?.Invoke(this, eventData);
+        }
+
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            AimEnded?.Invoke(this, eventData);
+        }
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            AimBegan?.Invoke(this, eventData);
+        }
+
+        public void OnDrag(PointerEventData eventData)
+        {
+            AimMoved?.Invoke(this, eventData);
+        }
+
+        public void OnEndDrag(PointerEventData eventData)
+        {
+            AimEnded?.Invoke(this, eventData);
         }
 
         public void SetInteractable(bool value)

@@ -37,6 +37,9 @@ namespace FluMix
         public float questionSeconds = 10f;
         public float bossCountdownStep = 1f;
         public float explainHoldSeconds = 1.2f;
+        public float answerDescriptionDelay = 1f;
+        public float answerDescriptionSeconds = 8f;
+        public bool playConfetti = false;
         public float virusMoveSeconds = 8f;
         public float virusStepSeconds = 2.8f;
         public float virusStepSlideSeconds = 0.45f;
@@ -101,6 +104,12 @@ namespace FluMix
         public float deathSeconds = 0.28f;
         public float laneSpacing = 150f;
         public float heroRecoilPixels = 18f;
+        public float eggGravity = 1650f;
+        public float eggMinSpeed = 520f;
+        public float eggMaxSpeed = 1320f;
+        public float eggDragMax = 460f;
+        public float eggHitRadius = 78f;
+        public int aimDashCount = 22;
         public float wrongMarkWidth = 220f;
         public float wrongMarkHeight = 64f;
         public float wrongMarkSeconds = 0.45f;

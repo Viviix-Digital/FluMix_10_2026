@@ -5,70 +5,80 @@
       "prompt": "Cúm mùa là bệnh do nguyên nhân nào gây ra?",
       "options": ["Vi khuẩn", "Virus cúm", "Thay đổi thời tiết", "Dị ứng"],
       "correctIndex": 1,
-      "explanation": "Cúm mùa do virus cúm gây ra, không phải vi khuẩn hay dị ứng."
+      "explanation": "Cúm mùa do virus cúm gây ra, không phải do thời tiết lạnh hay thay đổi nhiệt độ. Virus cúm A và B là các tác nhân gây cúm mùa ở người.",
+      "reference": "Krammer F, et al. Nat Rev Dis Primers. 2018;4:3"
     },
     {
       "id": "q2",
-      "prompt": "Tiêm vaccine cúm giúp ích gì?",
-      "options": ["Trị khỏi mọi bệnh hô hấp", "Giúp cơ thể tạo miễn dịch với virus cúm", "Thay cho việc rửa tay", "Chỉ cần tiêm một lần trong đời"],
-      "correctIndex": 1,
-      "explanation": "Vaccine cúm giúp cơ thể tạo miễn dịch, làm giảm nguy cơ mắc và biến chứng. Virus đổi chủng nên cần tiêm nhắc theo mùa."
+      "prompt": "Triệu chứng nào dưới đây thường gặp ở người mắc cúm mùa?",
+      "options": ["Sốt, ho, đau họng", "Đau chân do chấn thương", "Cận thị đột ngột", "Gãy xương"],
+      "correctIndex": 0,
+      "explanation": "Cúm thường gây sốt cao, ho và các triệu chứng toàn thân. Trong nghiên cứu trên 655 trẻ nhập viện tại Việt Nam, 92,5% có ho và 84,7% có sốt cao.",
+      "reference": "Nguyễn Sỹ Đức và cs. Tạp chí Nghiên cứu Y học. 2025;189(4):187-194"
     },
     {
       "id": "q3",
-      "prompt": "Cách nào giúp hạn chế virus cúm lây qua tay?",
-      "options": ["Chỉ lau khô tay", "Rửa tay bằng xà phòng và nước", "Dùng kháng sinh mỗi ngày", "Uống nước lạnh"],
-      "correctIndex": 1,
-      "explanation": "Rửa tay bằng xà phòng và nước làm giảm virus bám trên tay."
+      "prompt": "Làm thế nào để phân biệt cúm mùa với cảm lạnh thông thường?",
+      "options": ["Cúm mùa thường khởi phát đột ngột với các triệu chứng rõ rệt hơn", "Cảm lạnh luôn gây sốt cao hơn cúm", "Cúm mùa không ảnh hưởng đến đường hô hấp", "Hai bệnh luôn giống hệt nhau"],
+      "correctIndex": 0,
+      "explanation": "Cúm thường khởi phát đột ngột, kèm sốt, đau đầu, đau cơ và mệt mỏi rõ rệt. Tuy nhiên, các triệu chứng có thể giống cảm lạnh nên cần được nhân viên y tế đánh giá khi cần thiết.",
+      "reference": "Monto AS, et al. Arch Intern Med. 2000;160:3243-3247"
     },
     {
       "id": "q4",
-      "prompt": "Khi bị sốt và ho, nên làm gì để hạn chế lây cúm?",
-      "options": ["Đi học hoặc đi làm bình thường", "Đeo khẩu trang và nghỉ ở nhà", "Dùng chung ly nước", "Không cần che miệng khi ho"],
-      "correctIndex": 1,
-      "explanation": "Đeo khẩu trang khi sốt, ho và nghỉ ở nhà giúp hạn chế lây virus cho người khác."
+      "prompt": "Vaccine cúm hiện nay có thể được sử dụng qua những đường nào?",
+      "options": ["Chỉ tiêm", "Chỉ xịt mũi", "Tiêm hoặc xịt mũi tùy loại vaccine", "Uống"],
+      "correctIndex": 2,
+      "explanation": "Vaccine cúm có thể được sử dụng bằng đường tiêm hoặc đường xịt mũi, tùy từng loại vaccine và thông tin được phê duyệt.",
+      "reference": "Tờ hướng dẫn sử dụng vaccine cúm dạng xịt mũi được phê duyệt tại Việt Nam"
     },
     {
       "id": "q5",
-      "prompt": "Theo luật của trò chơi, virus xanh lá là virus ở đâu?",
-      "options": ["Trong máu", "Bên ngoài cơ thể", "Trong phổi", "Trong dạ dày"],
+      "prompt": "Điều nào dưới đây đúng về nguy cơ mắc cúm ở trẻ tiền học đường (2-5 tuổi)?",
+      "options": ["Trẻ chỉ có nguy cơ mắc cúm khi thời tiết chuyển lạnh", "Trẻ có thể mắc cúm khi tiếp xúc với người nhiễm cúm, đặc biệt trong môi trường sinh hoạt tập thể", "Trẻ khỏe mạnh sẽ không mắc cúm", "Trẻ chỉ mắc cúm khi đi du lịch xa"],
       "correctIndex": 1,
-      "explanation": "Virus xanh là virus bên ngoài cơ thể. Virus cam và đỏ là virus bên trong cơ thể."
+      "explanation": "Trẻ có thể mắc cúm khi tiếp xúc với người nhiễm bệnh, đặc biệt trong môi trường tập thể. Trẻ nhỏ có khả năng nhiễm cúm cao hơn khoảng 2-3 lần và có thể phát tán virus trước khi xuất hiện triệu chứng.",
+      "reference": "Nayak J, et al. Cold Spring Harb Perspect Med. 2021;11:a038430"
     },
     {
       "id": "q6",
-      "prompt": "Vì sao không dùng kháng sinh để trị cúm mùa?",
-      "options": ["Kháng sinh làm virus nhân lên", "Cúm do virus, kháng sinh không diệt virus", "Kháng sinh chỉ dùng cho trẻ em", "Kháng sinh thay được vaccine"],
-      "correctIndex": 1,
-      "explanation": "Cúm mùa do virus gây ra. Kháng sinh trị vi khuẩn, không trị virus."
+      "prompt": "Nhóm trẻ nào có nguy cơ gặp biến chứng do cúm?",
+      "options": ["Chỉ trẻ có bệnh nền", "Chỉ trẻ dưới 1 tuổi", "Chỉ trẻ suy dinh dưỡng", "Cả trẻ khỏe mạnh và trẻ có bệnh nền đều có thể gặp biến chứng do cúm"],
+      "correctIndex": 3,
+      "explanation": "Cúm không chỉ ảnh hưởng đến trẻ có bệnh nền. Trẻ khỏe mạnh cũng có thể gặp biến chứng như viêm phổi, viêm tai giữa hoặc cần nhập viện khi mắc cúm. Trong một nghiên cứu tại Việt Nam trên 655 trẻ nhập viện vì cúm, 60,6% trẻ không có bệnh nền và 61,5% gặp ít nhất một biến chứng liên quan đến cúm.",
+      "reference": "Nguyễn Sỹ Đức và cs. Tạp chí Nghiên cứu Y học. 2025;189(4):187-194"
     },
     {
       "id": "q7",
-      "prompt": "Người đang sốt vì cúm nên nghỉ ngơi ở đâu?",
-      "options": ["Ở nhà, tránh chỗ đông người", "Đến nơi đông người cho quen bệnh", "Đi bơi ngay", "Không cần nghỉ"],
-      "correctIndex": 0,
-      "explanation": "Nghỉ ở nhà khi sốt giúp cơ thể hồi phục và hạn chế lây cúm."
+      "prompt": "Khi mắc cúm, trẻ tiền học đường có thể gặp những vấn đề sức khỏe nào dưới đây?",
+      "options": ["Viêm tai giữa", "Viêm phổi", "Có thể phải nhập viện trong một số trường hợp nặng", "Tất cả các đáp án trên"],
+      "correctIndex": 3,
+      "explanation": "Cúm ở trẻ có thể dẫn đến viêm phổi, viêm tai giữa hoặc nhập viện. Trong nghiên cứu tại Việt Nam, 33% trẻ nhập viện bị viêm phế quản phổi và 17,1% bị co giật do sốt.",
+      "reference": "Nguyễn Sỹ Đức và cs. Tạp chí Nghiên cứu Y học. 2025;189(4):187-194"
     },
     {
       "id": "q8",
-      "prompt": "Nhóm triệu chứng nào hay gặp khi mắc cúm?",
-      "options": ["Chỉ ngứa da", "Sốt, ho, mệt", "Chỉ đau bụng", "Không có triệu chứng nào"],
-      "correctIndex": 1,
-      "explanation": "Cúm thường gây sốt, ho và mệt mỏi. Nếu nặng cần đi khám."
+      "prompt": "Virus cúm có thể thay đổi theo thời gian hay không?",
+      "options": ["Có", "Không"],
+      "correctIndex": 0,
+      "explanation": "Virus cúm có thể thay đổi theo thời gian. Vì vậy, thành phần vaccine cúm được xem xét và cập nhật theo các chủng virus dự kiến lưu hành.",
+      "reference": "WHO. Recommendations on the Composition of Influenza Virus Vaccines"
     },
     {
       "id": "q9",
-      "prompt": "Vì sao vaccine cúm cần được cập nhật theo mùa?",
-      "options": ["Vì virus cúm có thể đổi chủng", "Vì vaccine chỉ có tác dụng một ngày", "Vì thời tiết làm hỏng kháng thể ngay", "Vì kháng sinh hết hạn"],
+      "prompt": "Theo các nghiên cứu về bệnh cúm, nhóm đối tượng nào được xem là một trong những tác nhân chính góp phần lây truyền cúm trong cộng đồng?",
+      "options": ["Trẻ em", "Người trưởng thành", "Người lớn tuổi", "Thanh thiếu niên"],
       "correctIndex": 0,
-      "explanation": "Virus cúm hay đổi chủng, nên vaccine được cập nhật để phù hợp các chủng đang lưu hành."
+      "explanation": "Trẻ em là một trong những nhóm đóng vai trò quan trọng trong lây truyền cúm. Trẻ có thể nhiễm virus bên ngoài gia đình rồi truyền sang cha mẹ, anh chị em hoặc ông bà.",
+      "reference": "Endo A, et al. PLoS Comput Biol. 2019;15:e1007589"
     },
     {
       "id": "q10",
-      "prompt": "Vì sao phải chọn đúng chiến binh với đúng loại virus?",
-      "options": ["Vì màu áo cho đẹp", "Vì mỗi loại virus cần đúng đáp ứng miễn dịch", "Vì bắn càng nhiều càng tốt", "Vì mọi virus dùng chung một kháng thể"],
-      "correctIndex": 1,
-      "explanation": "Mỗi loại virus cần đúng kháng thể, đúng đáp ứng miễn dịch. Chọn sai là chưa hạ được virus đó."
+      "prompt": "Cúm mùa có thể do những loại virus cúm nào gây ra?",
+      "options": ["Chỉ virus cúm A", "Chỉ virus cúm B", "Virus cúm A hoặc virus cúm B", "Không câu nào đúng"],
+      "correctIndex": 2,
+      "explanation": "Cúm mùa ở người chủ yếu do virus cúm A hoặc B gây ra. Trong nghiên cứu trên trẻ nhập viện tại Việt Nam, cúm A chiếm 81,4% và cúm B chiếm 18,6% số trường hợp.",
+      "reference": "Nguyễn Sỹ Đức và cs. Tạp chí Nghiên cứu Y học. 2025;189(4):187-194"
     }
   ]
 }

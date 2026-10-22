@@ -18,9 +18,13 @@ namespace FluMix
         [SerializeField] TMP_Text[] optionLabels;
         [SerializeField] Image rightHighlight;
         [SerializeField] Image wrongHighlight;
+        [SerializeField] GameObject answerDescription;
+        [SerializeField] TMP_Text answerBody;
+        [SerializeField] TMP_Text answerAuthor;
 
         int cursor;
         bool locked;
+        bool descriptionDismissed;
         Action<int> picked;
 
         public void Bind(
@@ -44,11 +48,14 @@ namespace FluMix
             rightHighlight = right;
             wrongHighlight = wrong;
             WireButtons();
+            ResolveAnswerPanel();
         }
 
         void Awake()
         {
             WireButtons();
+            ResolveAnswerPanel();
+            HideAnswerPanel();
         }
 
         public void AdoptConfig(GameConfig gameConfig)
@@ -99,10 +106,14 @@ namespace FluMix
             int count = question != null && question.options != null ? question.options.Length : 0;
             for (int i = 0; i < optionLabels.Length; i++)
             {
+                bool visible = i < count;
                 if (optionLabels[i] != null)
-                    optionLabels[i].text = i < count ? question.options[i] : string.Empty;
+                    optionLabels[i].text = visible ? question.options[i] : string.Empty;
                 if (optionButtons != null && i < optionButtons.Length && optionButtons[i] != null)
-                    optionButtons[i].interactable = i < count;
+                {
+                    optionButtons[i].gameObject.SetActive(visible);
+                    optionButtons[i].interactable = visible;
+                }
             }
 
             SetTimer(config != null ? config.questionSeconds : 0f);
@@ -136,18 +147,66 @@ namespace FluMix
                 Hide(wrongHighlight);
 
             if (explanation != null)
-            {
-                explanation.gameObject.SetActive(true);
-                explanation.text = question.explanation;
-                FluMixSfx.Play("quiz_explain");
-            }
+                explanation.gameObject.SetActive(false);
 
             if (pickedIndex >= 0 && pickedIndex != question.correctIndex)
                 FluMixSfx.Play("quiz_wrong");
+            yield break;
+        }
 
-            float hold = config != null ? config.explainHoldSeconds : 0f;
-            if (hold > 0f)
-                yield return new WaitForSeconds(hold);
+        public IEnumerator ShowAnswerDescription(QuestionData question, int pickedIndex)
+        {
+            if (question == null || config != null && config.explainHoldSeconds <= config.explainDisabledSeconds)
+                yield break;
+
+            float delay = config != null ? Mathf.Max(0f, config.answerDescriptionDelay) : 1f;
+            if (delay > 0f)
+                yield return new WaitForSeconds(delay);
+
+            ResolveAnswerPanel();
+            if (answerDescription == null)
+                yield break;
+
+            bool correct = pickedIndex == question.correctIndex;
+            if (answerBody != null)
+            {
+                string body = question.explanation ?? string.Empty;
+                if (!correct)
+                    body = "Đáp án đúng: " + OptionLine(question, question.correctIndex) + "\n" + body;
+                answerBody.text = body;
+                answerBody.enableAutoSizing = true;
+                answerBody.fontSizeMax = 30.6f;
+                answerBody.fontSizeMin = 16f;
+            }
+
+            if (answerAuthor != null)
+            {
+                answerAuthor.text = string.IsNullOrEmpty(question.reference)
+                    ? string.Empty
+                    : "Tài liệu tham khảo: " + question.reference;
+                answerAuthor.enableAutoSizing = true;
+                answerAuthor.fontSizeMax = 22f;
+                answerAuthor.fontSizeMin = 12f;
+            }
+
+            if (explanation != null && explanation.transform.parent != null)
+                explanation.transform.parent.gameObject.SetActive(false);
+
+            descriptionDismissed = false;
+            answerDescription.SetActive(true);
+            answerDescription.transform.SetAsLastSibling();
+            WireAnswerDismiss();
+            FluMixSfx.Play("quiz_explain");
+
+            float hold = config != null && config.answerDescriptionSeconds > 0.5f ? config.answerDescriptionSeconds : 8f;
+            float elapsed = 0f;
+            while (elapsed < hold && !descriptionDismissed)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            HideAnswerPanel();
         }
 
         public void HideAll()
@@ -158,6 +217,7 @@ namespace FluMix
             Hide(wrongHighlight);
             if (explanation != null)
                 explanation.gameObject.SetActive(false);
+            HideAnswerPanel();
         }
 
         void WireButtons()
@@ -209,6 +269,68 @@ namespace FluMix
         {
             if (image != null)
                 image.gameObject.SetActive(false);
+        }
+
+        void ResolveAnswerPanel()
+        {
+            if (answerDescription != null && answerBody != null && answerAuthor != null)
+                return;
+
+            TMP_Text[] texts = FindObjectsByType<TMP_Text>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                TMP_Text text = texts[i];
+                if (text == null)
+                    continue;
+                if (answerBody == null && text.name == "Answer Description Text (TMP)")
+                {
+                    answerBody = text;
+                    if (text.transform.parent != null)
+                        answerDescription = text.transform.parent.gameObject;
+                }
+
+                if (answerAuthor == null && text.name == "Author Text (TMP)")
+                    answerAuthor = text;
+            }
+        }
+
+        void WireAnswerDismiss()
+        {
+            if (answerDescription == null)
+                return;
+
+            var button = answerDescription.GetComponent<Button>();
+            if (button == null)
+            {
+                button = answerDescription.AddComponent<Button>();
+                button.transition = Selectable.Transition.None;
+                var image = answerDescription.GetComponent<Image>();
+                if (image != null)
+                    button.targetGraphic = image;
+            }
+
+            button.onClick.RemoveListener(DismissAnswer);
+            button.onClick.AddListener(DismissAnswer);
+        }
+
+        void DismissAnswer()
+        {
+            descriptionDismissed = true;
+        }
+
+        void HideAnswerPanel()
+        {
+            if (answerDescription != null)
+                answerDescription.SetActive(false);
+        }
+
+        static string OptionLine(QuestionData question, int index)
+        {
+            string letter = index >= 0 && index < 26 ? ((char)('A' + index)).ToString() : "?";
+            string option = question != null && question.options != null && index >= 0 && index < question.options.Length
+                ? question.options[index]
+                : string.Empty;
+            return letter + ". " + option;
         }
     }
 }

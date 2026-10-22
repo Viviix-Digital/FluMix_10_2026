@@ -620,6 +620,9 @@ namespace FluMix
 
         public void PlayConfetti()
         {
+            if (config == null || !config.playConfetti)
+                return;
+
             if (confettiBurst == null)
                 confettiBurst = FindConfettiBurst();
             if (confettiBurst == null)
@@ -675,7 +678,7 @@ namespace FluMix
             }
         }
 
-        public IEnumerator PlayBeam(HeroId hero, Vector2 from, Vector2 to, bool connect)
+        public IEnumerator PlayBeam(HeroId hero, Vector2 from, Vector2 to, bool connect, bool impactSound = true)
         {
             Vector2 direction = to - from;
             float distance = direction.magnitude;
@@ -688,7 +691,7 @@ namespace FluMix
             FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
             if (shots == null)
                 shots = FindAnyObjectByType<FluMixShotVfx>();
-            bool particles = shots != null && arena != null && shots.PlayOverUi(hero, arena, from, endPoint, connect);
+            bool particles = shots != null && arena != null && shots.PlayOverUi(hero, arena, from, endPoint, connect, impactSound);
             if (particles)
             {
                 float shotElapsed = 0f;
@@ -712,7 +715,8 @@ namespace FluMix
 
             string cue = hero == HeroId.A ? "beam_blue" : hero == HeroId.G ? "beam_green" : "beam_pink";
             FluMixSfx.Play(cue);
-            FluMixSfx.Play(connect ? "impact_correct" : "impact_wrong");
+            if (impactSound)
+                FluMixSfx.Play(connect ? "impact_correct" : "impact_wrong");
 
             beam.gameObject.SetActive(true);
             beam.rectTransform.SetAsLastSibling();

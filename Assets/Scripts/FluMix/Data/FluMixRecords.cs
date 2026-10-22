@@ -10,6 +10,7 @@ namespace FluMix.Data
         public string[] options;
         public int correctIndex;
         public string explanation;
+        public string reference;
     }
 
     [Serializable]

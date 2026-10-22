@@ -32,7 +32,7 @@ namespace FluMix
             ResolveShield();
         }
 
-        public bool PlayOverUi(HeroId hero, RectTransform space, Vector2 fromLocal, Vector2 toLocal, bool connect)
+        public bool PlayOverUi(HeroId hero, RectTransform space, Vector2 fromLocal, Vector2 toLocal, bool connect, bool impactSound = true)
         {
             ResolveBeams();
             if (space == null || beamsRoot == null)
@@ -41,7 +41,7 @@ namespace FluMix
             Vector3 start = OnPlane(space, fromLocal);
             Vector3 end = OnPlane(space, toLocal);
             beamsRoot.gameObject.SetActive(true);
-            PlayShot(hero, start, end, connect);
+            PlayShot(hero, start, end, connect, impactSound);
             return true;
         }
 
@@ -57,7 +57,7 @@ namespace FluMix
             FluMixSfx.Play("quiz_correct");
         }
 
-        public void PlayShot(HeroId hero, Vector3 worldStart, Vector3 worldEnd, bool connect)
+        public void PlayShot(HeroId hero, Vector3 worldStart, Vector3 worldEnd, bool connect, bool impactSound = true)
         {
             ResolveBeams();
             if (beamsRoot == null)
@@ -87,7 +87,8 @@ namespace FluMix
 
             string cue = hero == HeroId.A ? "beam_blue" : hero == HeroId.G ? "beam_green" : "beam_pink";
             FluMixSfx.Play(cue);
-            FluMixSfx.Play(connect ? "impact_correct" : "impact_wrong");
+            if (impactSound)
+                FluMixSfx.Play(connect ? "impact_correct" : "impact_wrong");
             if (Application.isPlaying && isActiveAndEnabled)
                 shotRoutine = StartCoroutine(StopShot(weapon, 0.55f));
         }

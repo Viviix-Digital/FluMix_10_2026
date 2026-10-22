@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace FluMix
 {
@@ -16,6 +17,17 @@ namespace FluMix
             public float drop;
             public bool airborne;
             public bool dying;
+        }
+
+        class Launcher
+        {
+            public HeroView hero;
+            public AimDashes guide;
+            public Vector2 aim;
+            public bool dragging;
+            public bool flying;
+            public float pull;
+            public Vector2 lockedOrigin;
         }
 
         [SerializeField] GameConfig config;
@@ -38,7 +50,9 @@ namespace FluMix
         [SerializeField] ArenaStage stage;
 
         readonly List<ActiveVirus> alive = new List<ActiveVirus>();
+        readonly List<Launcher> launchers = new List<Launcher>();
         Sprite[] greenFrames;
+        RectTransform guideRoot;
 
         bool running;
         bool paused;
@@ -138,8 +152,12 @@ namespace FluMix
                 HeroView hero = heroes[i];
                 if (hero == null)
                     continue;
-                hero.Clicked -= OnHeroClicked;
-                hero.Clicked += OnHeroClicked;
+                hero.AimBegan -= OnAimBegan;
+                hero.AimBegan += OnAimBegan;
+                hero.AimMoved -= OnAimMoved;
+                hero.AimMoved += OnAimMoved;
+                hero.AimEnded -= OnAimEnded;
+                hero.AimEnded += OnAimEnded;
             }
         }
 
@@ -198,6 +216,8 @@ namespace FluMix
             pendingSpawn = null;
             if (stage != null)
                 stage.LayoutHeroes(heroes);
+            EnsureLaunchers();
+            ResetAims();
             SetHeroesInteractable(true);
             EnsurePopulation();
         }
@@ -208,9 +228,10 @@ namespace FluMix
             running = false;
             paused = true;
             inputLocked = false;
-            armed = null;
             if (stage != null)
                 stage.SetArmed(null);
+            ResetAims();
+            HideGuides();
             SetHeroesInteractable(false);
             ClearViruses();
         }
@@ -218,6 +239,8 @@ namespace FluMix
         public void SetPaused(bool value)
         {
             paused = value;
+            if (value && stage != null)
+                stage.SetArmed(null);
             SetHeroesInteractable(running && !value && !inputLocked);
         }
 
@@ -245,79 +268,183 @@ namespace FluMix
                 EnsurePopulation();
         }
 
-        HeroView armed;
-        int virusClickFrame = -1;
-
-        void OnHeroClicked(HeroView hero)
+        void LateUpdate()
         {
-            if (!running || paused || inputLocked || hero == null)
-                return;
+            bool show = running && !paused && arena != null;
+            if (guideRoot != null)
+                guideRoot.SetAsLastSibling();
 
-            armed = armed == hero ? null : hero;
-            if (stage != null)
-                stage.SetArmed(armed != null ? armed.Id : (HeroId?)null);
+            Rect bounds = arena != null ? arena.rect : new Rect(-960f, -540f, 1920f, 1080f);
+            for (int i = 0; i < launchers.Count; i++)
+            {
+                Launcher launcher = launchers[i];
+                if (launcher.hero == null || launcher.guide == null)
+                    continue;
+                if (!show || !launcher.dragging || launcher.flying)
+                {
+                    launcher.guide.Hide();
+                    continue;
+                }
+
+                Vector2 origin = MuzzleOf(launcher.hero);
+                Vector2 direction = launcher.aim.sqrMagnitude > 1f ? launcher.aim.normalized : Vector2.right;
+                ActiveVirus target = RayHit(origin, direction);
+                float reach = AimDashes.ExitDistance(origin, direction, bounds);
+                Vector2 end = target != null ? VirusBody(target) : origin + direction * Mathf.Max(reach, 80f);
+                launcher.guide.Draw(origin, end);
+            }
         }
 
-        public void OnVirusClicked(VirusView view)
+        void OnAimBegan(HeroView hero, PointerEventData eventData)
         {
-            if (!running || paused || inputLocked || armed == null || view == null)
+            if (!CanAim(hero))
                 return;
-            if (virusClickFrame == Time.frameCount)
-                return;
-            virusClickFrame = Time.frameCount;
 
-            ActiveVirus virus = null;
-            for (int i = 0; i < alive.Count; i++)
+            Launcher launcher = FindLauncher(hero);
+            if (launcher == null || launcher.flying)
+                return;
+
+            launcher.dragging = true;
+            launcher.pull = 0f;
+            for (int i = 0; i < launchers.Count; i++)
             {
-                if (alive[i].view == view && !alive[i].dying)
-                {
-                    virus = alive[i];
-                    break;
-                }
+                if (launchers[i] != launcher)
+                    launchers[i].dragging = false;
+            }
+            if (stage != null)
+                stage.SetArmed(hero.Id);
+        }
+
+        void OnAimMoved(HeroView hero, PointerEventData eventData)
+        {
+            Launcher launcher = FindLauncher(hero);
+            if (launcher == null || !launcher.dragging || !CanAim(hero))
+                return;
+            if (!PointerArena(eventData, out Vector2 pointer))
+                return;
+
+            ApplyAim(launcher, hero, pointer);
+        }
+
+        void OnAimEnded(HeroView hero, PointerEventData eventData)
+        {
+            Launcher launcher = FindLauncher(hero);
+            if (launcher == null)
+                return;
+
+            bool outward = false;
+            if (PointerArena(eventData, out Vector2 pointer))
+            {
+                ApplyAim(launcher, hero, pointer);
+                outward = AimingOutward(hero, pointer);
             }
 
-            if (virus == null)
-                return;
-
-            HeroView hero = armed;
-            armed = null;
+            bool fire = launcher.dragging && CanAim(hero) && launcher.pull >= 96f && outward;
+            launcher.dragging = false;
             if (stage != null)
                 stage.SetArmed(null);
-            bool correct = config.HeroFor(virus.view.Type) == hero.Id;
-            StartCoroutine(ResolveShot(hero, virus, correct));
+            if (fire)
+                StartCoroutine(FireBeam(launcher));
         }
 
-        IEnumerator ResolveShot(HeroView hero, ActiveVirus virus, bool correct)
+        void ApplyAim(Launcher launcher, HeroView hero, Vector2 pointer)
+        {
+            Vector2 origin = MuzzleOf(hero);
+            Vector2 pull = pointer - origin;
+            float mag = pull.magnitude;
+            launcher.pull = Mathf.Max(launcher.pull, mag);
+            if (!AimingOutward(hero, pointer) || mag < 36f)
+                return;
+
+            float max = config != null && config.eggDragMax > 40f ? config.eggDragMax : 460f;
+            float clamped = Mathf.Min(mag, max);
+            float minSpeed = config != null ? config.eggMinSpeed : 520f;
+            float maxSpeed = config != null ? config.eggMaxSpeed : 1320f;
+            float speed = Mathf.Lerp(minSpeed, maxSpeed, clamped / max);
+            launcher.aim = pull.normalized * speed;
+        }
+
+        bool AimingOutward(HeroView hero, Vector2 pointer)
+        {
+            RectTransform rect = hero.GetComponent<RectTransform>();
+            if (rect == null)
+                return true;
+
+            Vector2 center = MuzzleOf(hero);
+            if (fx != null)
+                center = fx.ArenaPoint(rect);
+            float reach = Mathf.Max(rect.rect.width * Mathf.Abs(rect.localScale.x), rect.rect.height * Mathf.Abs(rect.localScale.y)) * 0.46f;
+            return Vector2.Distance(pointer, center) > Mathf.Max(72f, reach);
+        }
+
+        bool CanAim(HeroView hero)
+        {
+            return running && !paused && !inputLocked && hero != null && config != null;
+        }
+
+        IEnumerator FireBeam(Launcher launcher)
+        {
+            HeroView hero = launcher.hero;
+            if (hero == null)
+                yield break;
+
+            inputLocked = true;
+            launcher.flying = true;
+            launcher.lockedOrigin = MuzzleOf(hero);
+            Vector2 origin = launcher.lockedOrigin;
+            Vector2 direction = launcher.aim.sqrMagnitude > 1f ? launcher.aim.normalized : Vector2.right;
+            if (hero.Sheet != null && hero.Sheet.HasFrames)
+                hero.Sheet.PlayOnce(null);
+            if (fx != null)
+                StartCoroutine(fx.HeroRecoil(hero.GetComponent<RectTransform>()));
+
+            ActiveVirus hit = RayHit(origin, direction);
+            Rect bounds = arena != null ? arena.rect : new Rect(-960f, -540f, 1920f, 1080f);
+            float distance = AimDashes.ExitDistance(origin, direction, bounds);
+            Vector2 end = hit != null ? VirusBody(hit) : origin + direction * Mathf.Max(distance, 80f);
+            if (fx != null)
+                yield return fx.PlayBeam(hero.Id, origin, end, true, false);
+
+            launcher.flying = false;
+            if (!running || hit == null || hit.view == null)
+            {
+                inputLocked = false;
+                yield break;
+            }
+
+            bool correct = config.HeroFor(hit.view.Type) == hero.Id;
+            yield return ResolveImpact(hero, hit, correct);
+        }
+
+        IEnumerator ResolveImpact(HeroView hero, ActiveVirus virus, bool correct)
         {
             inputLocked = true;
             if (correct)
                 virus.dying = true;
-            SetHeroesInteractable(false);
 
-            if (hero.Sheet != null && hero.Sheet.HasFrames)
-                hero.Sheet.PlayOnce(null);
-            StartCoroutine(fx.HeroRecoil(hero.GetComponent<RectTransform>()));
-
-            Vector2 from = fx.ArenaPoint(hero.Muzzle);
             Vector2 to = virus.view.Rect.anchoredPosition;
             int delta = correct ? config.correctHeroScore : config.wrongHeroScore;
             score.Add(delta);
-            yield return fx.PlayAimArrow(from, to);
-            fx.PlayScorePopup(delta, to);
-
-            yield return fx.PlayBeam(hero.Id, from, to, correct);
+            FluMixSfx.Play(correct ? "impact_correct" : "impact_wrong");
+            if (fx != null)
+                fx.PlayScorePopup(delta, to);
 
             if (correct)
             {
-                yield return new WaitForSeconds(config.hitStopSeconds);
-                virus.view.Pulse = false;
-                yield return fx.PlayVirusDeath(virus.view.Rect);
+                if (config.hitStopSeconds > 0f)
+                    yield return new WaitForSeconds(config.hitStopSeconds);
+                if (virus.view != null && fx != null)
+                {
+                    virus.view.Pulse = false;
+                    yield return fx.PlayVirusDeath(virus.view.Rect);
+                }
+
                 Remove(virus);
                 yield return new WaitForSeconds(config.spawnDelay);
                 if (running && !paused)
                     EnsurePopulation();
             }
-            else if (virus.view != null)
+            else if (virus.view != null && fx != null)
             {
                 VirusType next = OtherType(virus.view.Type);
                 Sprite sprite = SpriteFor(next);
@@ -330,7 +457,6 @@ namespace FluMix
             }
 
             inputLocked = false;
-            SetHeroesInteractable(running && !paused);
         }
 
         IEnumerator ResolveWall(ActiveVirus virus)
@@ -378,8 +504,6 @@ namespace FluMix
                 view.Sheet.AdoptConfig(config);
             PrepareSheet(view, type);
             view.Apply(type, SpriteFor(type), UsesSheet(type));
-            view.Clicked -= OnVirusClicked;
-            view.Clicked += OnVirusClicked;
             FluMixSfx.Play("virus_spawn");
             Sprite falling = DropSprite(type);
             bool airborne = falling != null;
@@ -634,6 +758,144 @@ namespace FluMix
             if (current == VirusType.Orange)
                 return roll == 0 ? VirusType.Green : VirusType.Red;
             return roll == 0 ? VirusType.Green : VirusType.Orange;
+        }
+
+        void EnsureLaunchers()
+        {
+            if (arena == null || heroes == null)
+                return;
+            if (guideRoot == null)
+            {
+                guideRoot = FluMixUi.CreateRect(arena, "ShotGuides", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f));
+                guideRoot.sizeDelta = arena.rect.size;
+                guideRoot.gameObject.hideFlags = HideFlags.DontSave;
+            }
+
+            int dashes = Mathf.Max(48, config != null ? config.aimDashCount : 48);
+            for (int i = 0; i < heroes.Length; i++)
+            {
+                HeroView hero = heroes[i];
+                if (hero == null || FindLauncher(hero) != null)
+                    continue;
+
+                launchers.Add(new Launcher
+                {
+                    hero = hero,
+                    guide = new AimDashes(guideRoot, dashes),
+                    aim = RestAim(hero.Id)
+                });
+            }
+        }
+
+        void ResetAims()
+        {
+            for (int i = 0; i < launchers.Count; i++)
+            {
+                Launcher launcher = launchers[i];
+                launcher.dragging = false;
+                launcher.flying = false;
+                launcher.pull = 0f;
+                if (launcher.hero != null)
+                    launcher.aim = RestAim(launcher.hero.Id);
+            }
+        }
+
+        void HideGuides()
+        {
+            for (int i = 0; i < launchers.Count; i++)
+            {
+                if (launchers[i].guide != null)
+                    launchers[i].guide.Hide();
+            }
+        }
+
+        Launcher FindLauncher(HeroView hero)
+        {
+            for (int i = 0; i < launchers.Count; i++)
+            {
+                if (launchers[i].hero == hero)
+                    return launchers[i];
+            }
+
+            return null;
+        }
+
+        static Vector2 RestAim(HeroId id)
+        {
+            switch (id)
+            {
+                case HeroId.G: return new Vector2(920f, 300f);
+                case HeroId.T: return new Vector2(540f, 150f);
+                default: return new Vector2(840f, 270f);
+            }
+        }
+
+        ActiveVirus RayHit(Vector2 origin, Vector2 direction)
+        {
+            ActiveVirus best = null;
+            float bestAlong = float.MaxValue;
+            float hit = config != null && config.eggHitRadius > 1f ? config.eggHitRadius : 78f;
+            for (int i = 0; i < alive.Count; i++)
+            {
+                ActiveVirus virus = alive[i];
+                if (virus == null || virus.dying || virus.view == null)
+                    continue;
+
+                Vector2 center = VirusBody(virus);
+                Vector2 delta = center - origin;
+                float along = Vector2.Dot(delta, direction);
+                if (along < 24f)
+                    continue;
+
+                float side = Mathf.Abs(delta.x * direction.y - delta.y * direction.x);
+                float scale = Mathf.Max(0.35f, virus.view.Rect.localScale.x);
+                float radius = hit * scale + 30f;
+                if (side > radius || along >= bestAlong)
+                    continue;
+
+                best = virus;
+                bestAlong = along;
+            }
+
+            return best;
+        }
+
+        Vector2 VirusBody(ActiveVirus virus)
+        {
+            float scale = virus != null && virus.view != null ? Mathf.Max(0.35f, virus.view.Rect.localScale.x) : 1f;
+            return VirusCenter(virus) + new Vector2(0f, 56f * scale);
+        }
+
+        Vector2 MuzzleOf(HeroView hero)
+        {
+            if (hero == null)
+                return Vector2.zero;
+            if (fx != null)
+                return fx.ArenaPoint(hero.Muzzle);
+            if (arena == null)
+                return Vector2.zero;
+            Vector3 local = arena.InverseTransformPoint(hero.Muzzle.TransformPoint(Vector3.zero));
+            return new Vector2(local.x, local.y);
+        }
+
+        bool PointerArena(PointerEventData eventData, out Vector2 local)
+        {
+            local = Vector2.zero;
+            if (arena == null || eventData == null)
+                return false;
+
+            Canvas canvas = arena.GetComponentInParent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
+                : null;
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, eventData.position, cam, out local);
+        }
+
+        Vector2 VirusCenter(ActiveVirus virus)
+        {
+            if (fx != null)
+                return fx.ArenaPoint(virus.view.Rect);
+            return virus.view.Rect.anchoredPosition;
         }
 
         void SetHeroesInteractable(bool value)

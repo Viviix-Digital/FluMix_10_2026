@@ -16,7 +16,7 @@ namespace FluMix.Data
         public static void EnsureCopied()
         {
             Directory.CreateDirectory(PersistentDir);
-            CopyIfMissing(QuestionsFile);
+            CopyIfNewer(QuestionsFile);
             CopyIfMissing(PlayersFile);
             CopyIfMissing(LeaderboardFile);
         }
@@ -24,6 +24,21 @@ namespace FluMix.Data
         public static string Persistent(string fileName)
         {
             return Path.Combine(PersistentDir, fileName);
+        }
+
+        static void CopyIfNewer(string fileName)
+        {
+            string dest = Persistent(fileName);
+            string src = Path.Combine(StreamingDir, fileName);
+            if (!File.Exists(src))
+            {
+                if (!File.Exists(dest))
+                    Debug.LogError("FluMix missing streaming file: " + src);
+                return;
+            }
+
+            if (!File.Exists(dest) || File.GetLastWriteTimeUtc(src) > File.GetLastWriteTimeUtc(dest))
+                File.Copy(src, dest, true);
         }
 
         static void CopyIfMissing(string fileName)
