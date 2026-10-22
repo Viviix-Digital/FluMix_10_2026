@@ -99,4 +99,169 @@ namespace FluMix
             mark.color = new Color(1f, 1f, 1f, Mathf.Lerp(1f, 0.45f, along));
         }
     }
+
+    public sealed class AimArc
+    {
+        readonly Image[] ticks;
+
+        public AimArc(RectTransform parent, int count)
+        {
+            ticks = new Image[count];
+            for (int i = 0; i < count; i++)
+            {
+                Image tick = FluMixUi.CreateImage(parent, "Arc", FluMixUi.White, new Vector2(14f, 5f), false);
+                tick.color = new Color(1f, 1f, 1f, 0.55f);
+                tick.enabled = false;
+                ticks[i] = tick;
+            }
+        }
+
+        public void Hide()
+        {
+            for (int i = 0; i < ticks.Length; i++)
+                ticks[i].enabled = false;
+        }
+
+        public void Draw(Vector2 origin, Vector2 forward)
+        {
+            if (forward.sqrMagnitude < 1f)
+            {
+                Hide();
+                return;
+            }
+
+            Vector2 dir = forward.normalized;
+            float radius = 96f;
+            float facing = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+            for (int i = 0; i < ticks.Length; i++)
+            {
+                float u = ticks.Length == 1 ? 0.5f : i / (float)(ticks.Length - 1);
+                float angle = (facing + Mathf.Lerp(-90f, 90f, u)) * Mathf.Deg2Rad;
+                Vector2 point = origin + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
+                Image tick = ticks[i];
+                tick.enabled = true;
+                tick.rectTransform.anchoredPosition = point;
+                tick.rectTransform.localEulerAngles = new Vector3(0f, 0f, angle * Mathf.Rad2Deg);
+                tick.color = new Color(1f, 1f, 1f, 0.7f);
+            }
+        }
+    }
+
+    public sealed class PullLine
+    {
+        readonly Image shaft;
+
+        public PullLine(RectTransform parent)
+        {
+            shaft = FluMixUi.CreateImage(parent, "PullLine", FluMixUi.White, new Vector2(8f, 8f), false);
+            shaft.rectTransform.pivot = new Vector2(0f, 0.5f);
+            shaft.color = new Color(1f, 1f, 1f, 0.9f);
+            shaft.enabled = false;
+        }
+
+        public void Hide()
+        {
+            shaft.enabled = false;
+        }
+
+        public void Draw(Vector2 from, Vector2 to)
+        {
+            Vector2 delta = to - from;
+            float length = delta.magnitude;
+            if (length < 8f)
+            {
+                Hide();
+                return;
+            }
+
+            shaft.enabled = true;
+            shaft.rectTransform.anchoredPosition = from;
+            shaft.rectTransform.sizeDelta = new Vector2(length, 7f);
+            shaft.rectTransform.localEulerAngles = new Vector3(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+        }
+    }
+
+    public sealed class SwipeHint
+    {
+        static Sprite fingerSprite;
+        readonly Image finger;
+        readonly Image[] trail;
+
+        public SwipeHint(RectTransform parent)
+        {
+            trail = new Image[5];
+            for (int i = 0; i < trail.Length; i++)
+            {
+                Image dot = FluMixUi.CreateImage(parent, "SwipeDot", FluMixUi.White, new Vector2(10f, 10f), false);
+                dot.color = new Color(1f, 1f, 1f, 0.35f);
+                dot.enabled = false;
+                trail[i] = dot;
+            }
+
+            finger = FluMixUi.CreateImage(parent, "SwipeFinger", Finger(), new Vector2(54f, 70f), false);
+            finger.preserveAspect = true;
+            finger.enabled = false;
+        }
+
+        public void Hide()
+        {
+            finger.enabled = false;
+            for (int i = 0; i < trail.Length; i++)
+                trail[i].enabled = false;
+        }
+
+        public void Show(Vector2 from, Vector2 to, float move, float fade)
+        {
+            Vector2 delta = to - from;
+            if (delta.sqrMagnitude < 1f)
+            {
+                Hide();
+                return;
+            }
+
+            Vector2 dir = delta.normalized;
+            float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + 90f;
+            for (int i = 0; i < trail.Length; i++)
+            {
+                float u = (i + 1f) / (trail.Length + 1f);
+                bool on = u <= move;
+                trail[i].enabled = on;
+                trail[i].rectTransform.anchoredPosition = Vector2.Lerp(from, to, u);
+                trail[i].color = new Color(1f, 1f, 1f, 0.4f * fade);
+            }
+
+            finger.enabled = fade > 0.02f;
+            finger.rectTransform.anchoredPosition = Vector2.Lerp(from, to, move);
+            finger.rectTransform.localEulerAngles = new Vector3(0f, 0f, angle);
+            finger.color = new Color(1f, 1f, 1f, fade);
+        }
+
+        static Sprite Finger()
+        {
+            if (fingerSprite != null)
+                return fingerSprite;
+
+            const int w = 64;
+            const int h = 84;
+            var texture = new Texture2D(w, h, TextureFormat.RGBA32, false);
+            texture.filterMode = FilterMode.Bilinear;
+            Vector2 tip = new Vector2(32f, 62f);
+            for (int y = 0; y < h; y++)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    float dx = (x - tip.x) / 16f;
+                    float dy = (y - tip.y) / 18f;
+                    float head = dx * dx + dy * dy;
+                    float body = Mathf.Abs(x - 32f) / 13f + Mathf.Abs(y - 28f) / 26f;
+                    float alpha = Mathf.Clamp01(Mathf.Max((1.05f - head) * 6f, (1.05f - body) * 5f));
+                    texture.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
+                }
+            }
+
+            texture.Apply();
+            fingerSprite = Sprite.Create(texture, new Rect(0f, 0f, w, h), new Vector2(0.5f, 0.15f), 100f);
+            return fingerSprite;
+        }
+    }
 }

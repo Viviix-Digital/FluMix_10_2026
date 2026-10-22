@@ -12,6 +12,8 @@ namespace FluMix
         [SerializeField] Button button;
         [SerializeField] RectTransform muzzle;
         [SerializeField] SpriteSheetPlayer sheet;
+        [Header("Vùng chạm")]
+        [SerializeField] float touchInset = 72f;
 
         public HeroId Id => id;
         public Image Image => image;
@@ -41,6 +43,23 @@ namespace FluMix
                 button = GetComponent<Button>();
             if (sheet == null)
                 sheet = GetComponent<SpriteSheetPlayer>();
+            ApplyTouchInset();
+        }
+
+        void OnValidate()
+        {
+            ApplyTouchInset();
+        }
+
+        void ApplyTouchInset()
+        {
+            if (image == null)
+                image = GetComponent<Image>();
+            if (image == null)
+                return;
+
+            float inset = Mathf.Max(0f, touchInset);
+            image.raycastPadding = new Vector4(inset, inset, inset, inset);
         }
 
         void OnEnable()
@@ -95,6 +114,60 @@ namespace FluMix
         {
             if (button != null)
                 button.interactable = value;
+        }
+
+        void OnDrawGizmos()
+        {
+            DrawTouchGizmo(false);
+        }
+
+        void OnDrawGizmosSelected()
+        {
+            DrawTouchGizmo(true);
+        }
+
+        void DrawTouchGizmo(bool selected)
+        {
+            RectTransform rect = transform as RectTransform;
+            if (rect == null)
+                return;
+
+            Rect area = rect.rect;
+            float inset = Mathf.Max(0f, touchInset);
+            area.xMin += inset;
+            area.xMax -= inset;
+            area.yMin += inset;
+            area.yMax -= inset;
+
+            Vector3 Corner(float x, float y)
+            {
+                return rect.TransformPoint(new Vector3(x, y, 0f));
+            }
+
+            Vector3 bl = Corner(area.xMin, area.yMin);
+            Vector3 tl = Corner(area.xMin, area.yMax);
+            Vector3 tr = Corner(area.xMax, area.yMax);
+            Vector3 br = Corner(area.xMax, area.yMin);
+            Gizmos.color = selected ? Color.green : new Color(0.3f, 1f, 0.45f, 0.95f);
+            Gizmos.DrawLine(bl, tl);
+            Gizmos.DrawLine(tl, tr);
+            Gizmos.DrawLine(tr, br);
+            Gizmos.DrawLine(br, bl);
+
+            Vector3 center = (bl + tr) * 0.5f;
+            float unit = Mathf.Max(0.001f, rect.lossyScale.x);
+            Gizmos.color = Color.cyan;
+            Gizmos.DrawWireSphere(center, 16f * unit);
+            Gizmos.DrawLine(center + Vector3.left * 22f * unit, center + Vector3.right * 22f * unit);
+            Gizmos.DrawLine(center + Vector3.down * 22f * unit, center + Vector3.up * 22f * unit);
+
+            if (muzzle != null)
+            {
+                Vector3 tip = muzzle.position;
+                Gizmos.color = Color.magenta;
+                Gizmos.DrawWireSphere(tip, 8f * unit);
+                Gizmos.DrawLine(center, tip);
+            }
         }
     }
 }

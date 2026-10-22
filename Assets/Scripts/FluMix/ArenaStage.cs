@@ -31,18 +31,14 @@ namespace FluMix
 
         public Transform Model => null;
 
-        HeroId? armedHero;
+        public void SetArmed(HeroId? id)
+        {
+        }
 
         void Awake()
         {
             EnsureLanes();
             EnsureActors();
-        }
-
-        public void SetArmed(HeroId? id)
-        {
-            armedHero = id;
-            ApplyHeroPose();
         }
 
         public Vector2 LaneLocal(int lane, float progress)
@@ -126,12 +122,6 @@ namespace FluMix
 
                 float attack = AttackScale(hero);
                 rect.localScale = basis * attack;
-                if (hero.Image == null)
-                    continue;
-
-                bool armed = armedHero.HasValue && armedHero.Value == pair.Key;
-                Color tint = armed ? new Color(1f, 0.92f, 0.35f, 1f) : Color.white;
-                hero.Image.color = tint;
             }
         }
 

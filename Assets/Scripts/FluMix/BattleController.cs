@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace FluMix
 {
@@ -23,7 +24,13 @@ namespace FluMix
         {
             public HeroView hero;
             public AimDashes guide;
+            public AimArc arc;
+            public PullLine pullLine;
+            public SwipeHint hint;
+            public Image pullMark;
+            public Vector2 drag;
             public Vector2 aim;
+            public float power;
             public bool dragging;
             public bool flying;
             public float pull;
@@ -48,11 +55,18 @@ namespace FluMix
         [SerializeField] Sprite[] redFrames;
         [SerializeField] bool greenUsesSheet;
         [SerializeField] ArenaStage stage;
+        [Header("Kéo aim")]
+        [SerializeField] float pullFullDistance = 140f;
+        [SerializeField] float pullToFire = 28f;
+        [Header("Nam châm aim")]
+        [SerializeField] float aimMagnetAngle = 32f;
+        [SerializeField] float aimMagnetStrength = 0.9f;
 
         readonly List<ActiveVirus> alive = new List<ActiveVirus>();
         readonly List<Launcher> launchers = new List<Launcher>();
         Sprite[] greenFrames;
         RectTransform guideRoot;
+        bool aimHintDone;
 
         bool running;
         bool paused;
@@ -218,6 +232,7 @@ namespace FluMix
                 stage.LayoutHeroes(heroes);
             EnsureLaunchers();
             ResetAims();
+            aimHintDone = false;
             SetHeroesInteractable(true);
             EnsurePopulation();
         }
@@ -274,11 +289,49 @@ namespace FluMix
             if (guideRoot != null)
                 guideRoot.SetAsLastSibling();
 
+            bool aiming = false;
             Rect bounds = arena != null ? arena.rect : new Rect(-960f, -540f, 1920f, 1080f);
             for (int i = 0; i < launchers.Count; i++)
             {
+                if (launchers[i].dragging)
+                    aiming = true;
+            }
+
+            float hintPhase = Mathf.Repeat(Time.time / 1.2f, 1f);
+            float hintMove = hintPhase < 0.7f ? Mathf.SmoothStep(0f, 1f, hintPhase / 0.7f) : 1f;
+            float hintFade = hintPhase < 0.7f ? 1f : 1f - (hintPhase - 0.7f) / 0.3f;
+            for (int i = 0; i < launchers.Count; i++)
+            {
                 Launcher launcher = launchers[i];
-                if (launcher.hero == null || launcher.guide == null)
+                if (launcher.hero == null)
+                    continue;
+
+                Vector2 origin = HeroCenter(launcher.hero);
+                Vector2 forward = RestAim(launcher.hero.Id).normalized;
+                Vector2 aimDir = launcher.dragging && launcher.aim.sqrMagnitude > 1f
+                    ? launcher.aim.normalized
+                    : forward;
+                if (launcher.arc != null)
+                {
+                    if (show && launcher.dragging && !launcher.flying)
+                        launcher.arc.Draw(origin, aimDir);
+                    else
+                        launcher.arc.Hide();
+                }
+
+                if (launcher.hint != null)
+                {
+                    if (show && !aiming && !aimHintDone && !launcher.flying)
+                        launcher.hint.Show(origin + forward * 24f, origin - forward * 150f, hintMove, hintFade);
+                    else
+                        launcher.hint.Hide();
+                }
+
+                if (launcher.pullMark != null)
+                    launcher.pullMark.enabled = false;
+                if (launcher.pullLine != null)
+                    launcher.pullLine.Hide();
+                if (launcher.guide == null)
                     continue;
                 if (!show || !launcher.dragging || launcher.flying)
                 {
@@ -286,12 +339,21 @@ namespace FluMix
                     continue;
                 }
 
-                Vector2 origin = MuzzleOf(launcher.hero);
-                Vector2 direction = launcher.aim.sqrMagnitude > 1f ? launcher.aim.normalized : Vector2.right;
-                ActiveVirus target = RayHit(origin, direction);
-                float reach = AimDashes.ExitDistance(origin, direction, bounds);
-                Vector2 end = target != null ? VirusBody(target) : origin + direction * Mathf.Max(reach, 80f);
+                float reach = AimLength(origin, aimDir, launcher.power, bounds);
+                Vector2 end = origin + aimDir * reach;
                 launcher.guide.Draw(origin, end);
+                if (launcher.drag.sqrMagnitude > 16f)
+                {
+                    float shown = Mathf.Min(launcher.drag.magnitude, PullMax());
+                    Vector2 pullEnd = origin + launcher.drag.normalized * shown;
+                    if (launcher.pullLine != null)
+                        launcher.pullLine.Draw(origin, pullEnd);
+                    if (launcher.pullMark != null)
+                    {
+                        launcher.pullMark.enabled = true;
+                        launcher.pullMark.rectTransform.anchoredPosition = pullEnd;
+                    }
+                }
             }
         }
 
@@ -306,6 +368,8 @@ namespace FluMix
 
             launcher.dragging = true;
             launcher.pull = 0f;
+            launcher.power = 0f;
+            launcher.drag = Vector2.zero;
             for (int i = 0; i < launchers.Count; i++)
             {
                 if (launchers[i] != launcher)
@@ -332,49 +396,86 @@ namespace FluMix
             if (launcher == null)
                 return;
 
-            bool outward = false;
-            if (PointerArena(eventData, out Vector2 pointer))
-            {
+            if (launcher.dragging && PointerArena(eventData, out Vector2 pointer))
                 ApplyAim(launcher, hero, pointer);
-                outward = AimingOutward(hero, pointer);
-            }
 
-            bool fire = launcher.dragging && CanAim(hero) && launcher.pull >= 96f && outward;
+            bool fire = launcher.dragging && CanAim(hero) && launcher.pull >= Mathf.Max(8f, pullToFire);
             launcher.dragging = false;
             if (stage != null)
                 stage.SetArmed(null);
             if (fire)
+            {
+                aimHintDone = true;
                 StartCoroutine(FireBeam(launcher));
+            }
         }
 
         void ApplyAim(Launcher launcher, HeroView hero, Vector2 pointer)
         {
-            Vector2 origin = MuzzleOf(hero);
-            Vector2 pull = pointer - origin;
-            float mag = pull.magnitude;
+            Vector2 origin = HeroCenter(hero);
+            Vector2 drag = pointer - origin;
+            float mag = drag.magnitude;
             launcher.pull = Mathf.Max(launcher.pull, mag);
-            if (!AimingOutward(hero, pointer) || mag < 36f)
+            launcher.drag = drag;
+            if (mag < 12f)
                 return;
 
-            float max = config != null && config.eggDragMax > 40f ? config.eggDragMax : 460f;
+            float max = PullMax();
             float clamped = Mathf.Min(mag, max);
-            float minSpeed = config != null ? config.eggMinSpeed : 520f;
-            float maxSpeed = config != null ? config.eggMaxSpeed : 1320f;
-            float speed = Mathf.Lerp(minSpeed, maxSpeed, clamped / max);
-            launcher.aim = pull.normalized * speed;
+            launcher.power = clamped / max;
+            Vector2 launch = Assist(origin, -drag.normalized);
+            float speed = Mathf.Lerp(480f, 1400f, launcher.power);
+            launcher.aim = launch * speed;
         }
 
-        bool AimingOutward(HeroView hero, Vector2 pointer)
+        float PullMax()
         {
-            RectTransform rect = hero.GetComponent<RectTransform>();
-            if (rect == null)
-                return true;
+            return pullFullDistance > 24f ? pullFullDistance : 140f;
+        }
 
-            Vector2 center = MuzzleOf(hero);
-            if (fx != null)
-                center = fx.ArenaPoint(rect);
-            float reach = Mathf.Max(rect.rect.width * Mathf.Abs(rect.localScale.x), rect.rect.height * Mathf.Abs(rect.localScale.y)) * 0.46f;
-            return Vector2.Distance(pointer, center) > Mathf.Max(72f, reach);
+        float AimLength(Vector2 origin, Vector2 direction, float power, Rect bounds)
+        {
+            float full = AimDashes.ExitDistance(origin, direction, bounds);
+            if (RayPoint(origin, direction, out Vector2 hit))
+                full = Mathf.Min(full, Vector2.Distance(origin, hit));
+            full = Mathf.Max(full, 160f);
+            return Mathf.Lerp(150f, full, Mathf.Clamp01(power));
+        }
+
+        Vector2 Assist(Vector2 origin, Vector2 direction)
+        {
+            if (direction.sqrMagnitude < 0.001f)
+                return Vector2.right;
+
+            Vector2 dir = direction.normalized;
+            float window = aimMagnetAngle > 4f ? aimMagnetAngle : 32f;
+            float strength = Mathf.Clamp(aimMagnetStrength, 0.5f, 1f);
+            float bestAngle = window;
+            Vector2 best = dir;
+            for (int i = 0; i < alive.Count; i++)
+            {
+                ActiveVirus virus = alive[i];
+                if (virus == null || virus.dying || virus.view == null)
+                    continue;
+
+                Vector2 to = VirusBody(virus) - origin;
+                if (to.sqrMagnitude < 4f)
+                    continue;
+
+                float angle = Vector2.Angle(dir, to);
+                if (angle >= bestAngle)
+                    continue;
+
+                bestAngle = angle;
+                best = to.normalized;
+            }
+
+            if (bestAngle >= window)
+                return dir;
+
+            float near = 1f - bestAngle / window;
+            float weight = Mathf.Lerp(0.55f, strength, Mathf.Pow(near, 0.45f));
+            return Vector2.Lerp(dir, best, weight).normalized;
         }
 
         bool CanAim(HeroView hero)
@@ -390,7 +491,7 @@ namespace FluMix
 
             inputLocked = true;
             launcher.flying = true;
-            launcher.lockedOrigin = MuzzleOf(hero);
+            launcher.lockedOrigin = HeroCenter(hero);
             Vector2 origin = launcher.lockedOrigin;
             Vector2 direction = launcher.aim.sqrMagnitude > 1f ? launcher.aim.normalized : Vector2.right;
             if (hero.Sheet != null && hero.Sheet.HasFrames)
@@ -398,10 +499,15 @@ namespace FluMix
             if (fx != null)
                 StartCoroutine(fx.HeroRecoil(hero.GetComponent<RectTransform>()));
 
-            ActiveVirus hit = RayHit(origin, direction);
             Rect bounds = arena != null ? arena.rect : new Rect(-960f, -540f, 1920f, 1080f);
-            float distance = AimDashes.ExitDistance(origin, direction, bounds);
-            Vector2 end = hit != null ? VirusBody(hit) : origin + direction * Mathf.Max(distance, 80f);
+            float distance = AimLength(origin, direction, launcher.power, bounds);
+            Vector2 end = origin + direction * distance;
+            ActiveVirus hit = null;
+            if (RayPoint(origin, direction, out Vector2 hitPoint) && Vector2.Distance(origin, hitPoint) <= distance + 28f)
+            {
+                end = hitPoint;
+                hit = RayHit(origin, direction);
+            }
             if (fx != null)
                 yield return fx.PlayBeam(hero.Id, origin, end, true, false);
 
@@ -782,6 +888,10 @@ namespace FluMix
                 {
                     hero = hero,
                     guide = new AimDashes(guideRoot, dashes),
+                    arc = new AimArc(guideRoot, 18),
+                    pullLine = new PullLine(guideRoot),
+                    hint = new SwipeHint(guideRoot),
+                    pullMark = PullMark(guideRoot),
                     aim = RestAim(hero.Id)
                 });
             }
@@ -795,6 +905,8 @@ namespace FluMix
                 launcher.dragging = false;
                 launcher.flying = false;
                 launcher.pull = 0f;
+                launcher.power = 0f;
+                launcher.drag = Vector2.zero;
                 if (launcher.hero != null)
                     launcher.aim = RestAim(launcher.hero.Id);
             }
@@ -806,6 +918,14 @@ namespace FluMix
             {
                 if (launchers[i].guide != null)
                     launchers[i].guide.Hide();
+                if (launchers[i].arc != null)
+                    launchers[i].arc.Hide();
+                if (launchers[i].pullLine != null)
+                    launchers[i].pullLine.Hide();
+                if (launchers[i].hint != null)
+                    launchers[i].hint.Hide();
+                if (launchers[i].pullMark != null)
+                    launchers[i].pullMark.enabled = false;
             }
         }
 
@@ -860,10 +980,46 @@ namespace FluMix
             return best;
         }
 
+        bool RayPoint(Vector2 origin, Vector2 direction, out Vector2 point)
+        {
+            point = origin;
+            ActiveVirus virus = RayHit(origin, direction);
+            if (virus == null)
+                return false;
+
+            Vector2 center = VirusBody(virus);
+            float along = Vector2.Dot(center - origin, direction);
+            point = origin + direction * Mathf.Max(24f, along);
+            return true;
+        }
+
+        static Image PullMark(RectTransform parent)
+        {
+            Image mark = FluMixUi.CreateImage(parent, "Pull", FluMixUi.White, new Vector2(22f, 22f), false);
+            mark.color = new Color(1f, 1f, 1f, 0.85f);
+            mark.enabled = false;
+            return mark;
+        }
+
         Vector2 VirusBody(ActiveVirus virus)
         {
             float scale = virus != null && virus.view != null ? Mathf.Max(0.35f, virus.view.Rect.localScale.x) : 1f;
             return VirusCenter(virus) + new Vector2(0f, 56f * scale);
+        }
+
+        Vector2 HeroCenter(HeroView hero)
+        {
+            if (hero == null)
+                return Vector2.zero;
+            RectTransform rect = hero.transform as RectTransform;
+            if (rect == null)
+                return MuzzleOf(hero);
+            if (fx != null)
+                return fx.ArenaPoint(rect);
+            if (arena == null)
+                return Vector2.zero;
+            Vector3 local = arena.InverseTransformPoint(rect.TransformPoint(Vector3.zero));
+            return new Vector2(local.x, local.y);
         }
 
         Vector2 MuzzleOf(HeroView hero)
