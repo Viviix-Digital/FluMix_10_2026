@@ -1,105 +1,56 @@
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace FluMix
 {
     /// <summary>
-    /// Places the 2D heroes and viruses on the 3D arena and projects them back
-    /// onto the gameplay canvas so clicks, beams, and sheets stay aligned.
+    /// Places heroes and viruses on the 2D arena canvas. Lanes run from the
+    /// right side of each floor band toward the castle on the left.
     /// </summary>
     public class ArenaStage : MonoBehaviour
     {
-        [SerializeField] Camera view;
         [SerializeField] RectTransform arena;
-        [SerializeField] Transform modelRoot;
-        [SerializeField] Transform heroA;
-        [SerializeField] Transform heroG;
-        [SerializeField] Transform heroT;
-        [SerializeField] Vector3[] laneSpawn;
-        [SerializeField] Vector3[] laneWall;
-        [SerializeField] float heroHeight = 3.4f;
-        [SerializeField] float heroLift = 0.75f;
-        [SerializeField] float virusHeight = 1.7f;
-        [SerializeField] float heroBob = 0.12f;
-        [SerializeField] float heroBobSeconds = 1.6f;
+        [SerializeField] RectTransform actors;
+        [SerializeField] Vector2[] laneSpawn;
+        [SerializeField] Vector2[] laneWall;
+        [SerializeField] float[] laneScale;
+        [SerializeField] float dropHeight = 340f;
         [Header("Scale lúc animation tấn công")]
-        [Tooltip("1 là cỡ hiện tại. Chỉnh khi đang Play để xem ngay trên sân.")]
         [SerializeField] float attackScaleA = 1f;
         [SerializeField] float attackScaleG = 1f;
-        [SerializeField] float attackScaleT = 1f;
+        [SerializeField] float attackScaleT = 1.39f;
 
-        readonly Dictionary<int, WorldBillboard> viruses = new Dictionary<int, WorldBillboard>();
-        readonly Dictionary<HeroId, WorldBillboard> heroes = new Dictionary<HeroId, WorldBillboard>();
         readonly Dictionary<HeroId, HeroView> heroViews = new Dictionary<HeroId, HeroView>();
-        Transform actorRoot;
+        readonly Dictionary<HeroId, Vector3> heroBaseScale = new Dictionary<HeroId, Vector3>();
 
-        public bool Ready => view != null && arena != null && laneSpawn != null && laneSpawn.Length > 0 && laneWall != null && laneWall.Length > 0;
+        public bool Ready =>
+            arena != null && laneSpawn != null && laneSpawn.Length > 0 && laneWall != null && laneWall.Length > 0;
 
-        public void Adopt(Camera camera, RectTransform arenaRect, Transform model, Transform a, Transform g, Transform t, Vector3[] spawns, Vector3[] walls, float heroesTall, float virusesTall)
-        {
-            view = camera;
-            arena = arenaRect;
-            modelRoot = model;
-            heroA = a;
-            heroG = g;
-            heroT = t;
-            laneSpawn = spawns;
-            laneWall = walls;
-            heroHeight = heroesTall;
-            virusHeight = virusesTall;
-        }
+        public int LaneCount => laneSpawn != null ? laneSpawn.Length : 0;
+
+        public Transform Model => null;
 
         HeroId? armedHero;
+
+        void Awake()
+        {
+            EnsureLanes();
+            EnsureActors();
+        }
 
         public void SetArmed(HeroId? id)
         {
             armedHero = id;
+            ApplyHeroPose();
         }
 
-        public Vector3 HeroWorld(HeroId id)
+        public Vector2 LaneLocal(int lane, float progress)
         {
-            Transform anchor = Anchor(id);
-            if (anchor == null)
-                return Vector3.zero;
-            Vector3 world = anchor.position + Vector3.up * heroLift;
-            if (view != null)
-            {
-                Vector3 toward = view.transform.position - world;
-                toward.y = 0f;
-                if (toward.sqrMagnitude > 0.01f)
-                    world += toward.normalized * 0.45f;
-            }
-
-            return world;
-        }
-
-        public int LaneCount => laneSpawn != null ? laneSpawn.Length : 0;
-
-        public Transform Model => modelRoot;
-
-        public Vector3 LanePoint(int lane, float progress)
-        {
+            EnsureLanes();
             int index = Mathf.Clamp(lane, 0, laneSpawn.Length - 1);
             int wallIndex = Mathf.Clamp(lane, 0, laneWall.Length - 1);
-            return Vector3.Lerp(laneSpawn[index], laneWall[wallIndex], Mathf.Clamp01(progress));
-        }
-
-        public bool Project(Vector3 world, out Vector2 local)
-        {
-            local = Vector2.zero;
-            if (view == null || arena == null)
-                return false;
-
-            Camera uiCamera = UiCamera();
-            Camera projector = uiCamera != null ? uiCamera : view;
-            Vector3 screen = projector.WorldToScreenPoint(world);
-            if (screen.z <= 0f)
-                return false;
-
-            return RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, screen, uiCamera, out local);
+            return Vector2.Lerp(laneSpawn[index], laneWall[wallIndex], Mathf.Clamp01(progress));
         }
 
         public void LayoutHeroes(HeroView[] views)
@@ -107,192 +58,90 @@ namespace FluMix
             if (views == null)
                 return;
 
-            ClearHeroBoards();
-            HideCard(heroA);
-            HideCard(heroG);
-            HideCard(heroT);
             for (int i = 0; i < views.Length; i++)
             {
                 HeroView hero = views[i];
                 if (hero == null)
                     continue;
-                Transform anchor = Anchor(hero.Id);
-                if (anchor == null)
-                    continue;
 
                 heroViews[hero.Id] = hero;
-                Sprite sprite = hero.Image != null ? hero.Image.sprite : null;
-                WorldBillboard board = BoardFor(heroes, hero.Id, "HeroBillboard " + hero.Id, heroHeight, sprite);
-                Vector3 world = anchor.position + Vector3.up * heroLift;
-                if (view != null)
-                {
-                    Vector3 toward = view.transform.position - world;
-                    toward.y = 0f;
-                    if (toward.sqrMagnitude > 0.01f)
-                        world += toward.normalized * 0.45f;
-                }
-                board.Present(view, world, sprite, Vector3.one, 0f, Color.white);
-                HideUi(hero.Image);
-                if (Project(world, out Vector2 local))
-                    hero.GetComponent<RectTransform>().anchoredPosition = local;
-                FitClick(hero, world);
+                RectTransform rect = hero.GetComponent<RectTransform>();
+                if (rect != null && !heroBaseScale.ContainsKey(hero.Id))
+                    heroBaseScale[hero.Id] = rect.localScale;
+                Show(hero.Image);
             }
+
+            ApplyHeroPose();
         }
 
-        public void PlaceVirus(VirusView virus, Vector3 world)
+        public void PlaceVirus(VirusView virus, int lane, float progress, float land)
         {
             if (virus == null)
                 return;
 
-            Sprite sprite = virus.Image != null ? virus.Image.sprite : null;
-            WorldBillboard board = BoardFor(viruses, virus.GetInstanceID(), "VirusBillboard", virusHeight, sprite);
-            float flash = virus.Flash != null ? virus.Flash.color.a : 0f;
-            Color tint = Color.Lerp(virus.Tint, Color.white, flash);
-            board.ClickTarget = virus;
-            board.Present(view, world, sprite, virus.Rect.localScale, virus.Rect.localEulerAngles.z, tint);
-            HideUi(virus.Image);
-            FitVirusClick(virus, world);
-            if (Project(world, out Vector2 local))
-                virus.Rect.anchoredPosition = local;
-            virus.Rect.SetAsLastSibling();
+            EnsureActors();
+            if (actors != null && virus.Rect.parent != actors)
+                virus.Rect.SetParent(actors, false);
+
+            float settled = Mathf.Clamp01(land);
+            Vector2 landed = LaneLocal(lane, progress);
+            virus.Rect.pivot = new Vector2(0.5f, 0.12f);
+            virus.Rect.anchoredPosition = landed + Vector2.up * Mathf.Lerp(dropHeight, 0f, settled);
+            float scale = ScaleOf(lane) * Mathf.Lerp(1.15f, 1f, settled);
+            virus.SetScale(Vector3.one * scale);
+            Show(virus.Image);
+            if (virus.Image != null)
+                virus.Image.raycastTarget = true;
+            if (actors != null)
+                virus.Rect.SetSiblingIndex(Mathf.Clamp(lane, 0, Mathf.Max(0, actors.childCount - 1)));
         }
 
         public void ReleaseVirus(VirusView virus)
         {
-            if (virus == null)
-                return;
-            int id = virus.GetInstanceID();
-            if (!viruses.TryGetValue(id, out WorldBillboard board))
-                return;
-            viruses.Remove(id);
-            if (board != null)
-                Destroy(board.gameObject);
         }
 
         public void ClearViruses()
         {
-            foreach (KeyValuePair<int, WorldBillboard> pair in viruses)
-            {
-                if (pair.Value != null)
-                    Destroy(pair.Value.gameObject);
-            }
-
-            viruses.Clear();
-        }
-
-        void Update()
-        {
-            TryClickVirus();
-        }
-
-        void TryClickVirus()
-        {
-            if (view == null || Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame)
-                return;
-
-            Vector2 screen = Mouse.current.position.ReadValue();
-            if (PointerHitsHero(screen))
-                return;
-
-            VirusView target = null;
-            float nearest = float.MaxValue;
-            foreach (KeyValuePair<int, WorldBillboard> pair in viruses)
-            {
-                WorldBillboard board = pair.Value;
-                if (board == null || !board.HitScreen(view, screen))
-                    continue;
-                float depth = Vector3.Distance(view.transform.position, board.transform.position);
-                if (depth >= nearest)
-                    continue;
-                nearest = depth;
-                target = board.ClickTarget;
-            }
-
-            if (target != null)
-                target.NotifyClick();
-        }
-
-        static bool PointerHitsHero(Vector2 screen)
-        {
-            if (EventSystem.current == null)
-                return false;
-
-            var data = new PointerEventData(EventSystem.current) { position = screen };
-            var results = new List<RaycastResult>();
-            EventSystem.current.RaycastAll(data, results);
-            for (int i = 0; i < results.Count; i++)
-            {
-                if (results[i].gameObject != null && results[i].gameObject.GetComponentInParent<HeroView>() != null)
-                    return true;
-            }
-
-            return false;
-        }
-
-        Camera UiCamera()
-        {
-            if (arena == null)
-                return null;
-            Canvas canvas = arena.GetComponentInParent<Canvas>();
-            if (canvas == null || canvas.renderMode == RenderMode.ScreenSpaceOverlay)
-                return null;
-            return canvas.worldCamera != null ? canvas.worldCamera : view;
-        }
-
-        void ApplyVirusVanish()
-        {
-            foreach (KeyValuePair<int, WorldBillboard> pair in viruses)
-            {
-                if (pair.Value != null)
-                    pair.Value.ApplyVanish();
-            }
         }
 
         void LateUpdate()
         {
-            ApplyVirusVanish();
-            if (!Ready || heroes.Count == 0)
-                return;
+            ApplyHeroPose();
+        }
 
-            float duration = Mathf.Max(0.01f, heroBobSeconds);
-            int index = 0;
-            foreach (KeyValuePair<HeroId, WorldBillboard> pair in heroes)
+        void ApplyHeroPose()
+        {
+            foreach (KeyValuePair<HeroId, HeroView> pair in heroViews)
             {
-                Transform anchor = Anchor(pair.Key);
-                WorldBillboard board = pair.Value;
-                if (anchor == null || board == null)
-                {
-                    index++;
+                HeroView hero = pair.Value;
+                if (hero == null)
                     continue;
-                }
 
-                float phase = index / Mathf.Max(1f, heroes.Count);
-                float wave = Mathf.Sin((Time.time / duration + phase) * Mathf.PI * 2f);
-                Vector3 world = anchor.position + Vector3.up * (wave * heroBob + heroLift);
-                if (view != null)
-                {
-                    Vector3 toward = view.transform.position - anchor.position;
-                    toward.y = 0f;
-                    if (toward.sqrMagnitude > 0.01f)
-                        world += toward.normalized * 0.45f;
-                }
-                Sprite sprite = null;
-                heroViews.TryGetValue(pair.Key, out HeroView hero);
-                if (hero != null && hero.Image != null)
-                {
-                    sprite = hero.Image.sprite;
-                    HideUi(hero.Image);
-                    if (Project(world, out Vector2 local))
-                        hero.GetComponent<RectTransform>().anchoredPosition = local;
-                }
+                RectTransform rect = hero.GetComponent<RectTransform>();
+                if (rect == null)
+                    continue;
 
-                Color tint = armedHero.HasValue && armedHero.Value == pair.Key
-                    ? new Color(1f, 0.92f, 0.35f, 1f)
-                    : Color.white;
-                float attackScale = AttackScale(hero);
-                board.Present(view, world, sprite, new Vector3(attackScale, attackScale, attackScale), 0f, tint, StandingScale(hero));
-                index++;
+                if (!heroBaseScale.TryGetValue(pair.Key, out Vector3 basis))
+                    basis = Vector3.one;
+
+                float attack = AttackScale(hero);
+                rect.localScale = basis * attack;
+                if (hero.Image == null)
+                    continue;
+
+                bool armed = armedHero.HasValue && armedHero.Value == pair.Key;
+                Color tint = armed ? new Color(1f, 0.92f, 0.35f, 1f) : Color.white;
+                hero.Image.color = tint;
             }
+        }
+
+        float ScaleOf(int lane)
+        {
+            if (laneScale == null || laneScale.Length < 3)
+                laneScale = new[] { 0.72f, 1.05f, 1.5f };
+            int index = Mathf.Clamp(lane, 0, laneScale.Length - 1);
+            float scale = laneScale[index];
+            return scale > 0.05f ? scale : 1f;
         }
 
         float AttackScale(HeroView hero)
@@ -303,138 +152,56 @@ namespace FluMix
             return scale > 0.05f ? scale : 1f;
         }
 
-        static Sprite StandingScale(HeroView hero)
+        void EnsureLanes()
         {
-            if (hero == null || hero.Sheet == null || !hero.Sheet.IsPlaying || !hero.Sheet.HasFrames)
-                return null;
-            return hero.Sheet.Frames[0];
-        }
+            if (laneSpawn != null && laneSpawn.Length > 0 && laneWall != null && laneWall.Length > 0)
+                return;
 
-        Transform Anchor(HeroId id)
-        {
-            switch (id)
+            laneSpawn = new[]
             {
-                case HeroId.G: return heroG;
-                case HeroId.T: return heroT;
-                default: return heroA;
-            }
-        }
-
-        WorldBillboard BoardFor(Dictionary<HeroId, WorldBillboard> map, HeroId id, string label, float height, Sprite sprite)
-        {
-            if (map.TryGetValue(id, out WorldBillboard existing) && existing != null)
-                return existing;
-
-            WorldBillboard created = CreateBoard(label, height, sprite);
-            map[id] = created;
-            return created;
-        }
-
-        WorldBillboard BoardFor(Dictionary<int, WorldBillboard> map, int id, string label, float height, Sprite sprite)
-        {
-            if (map.TryGetValue(id, out WorldBillboard existing) && existing != null)
-                return existing;
-
-            WorldBillboard created = CreateBoard(label, height, sprite);
-            map[id] = created;
-            return created;
-        }
-
-        WorldBillboard CreateBoard(string label, float height, Sprite sprite)
-        {
-            if (actorRoot == null)
+                new Vector2(620f, -123f),
+                new Vector2(760f, -270f),
+                new Vector2(860f, -455f)
+            };
+            laneWall = new[]
             {
-                var root = new GameObject("StageActors");
-                root.transform.SetParent(modelRoot != null ? modelRoot : transform, false);
-                actorRoot = root.transform;
+                new Vector2(-210f, -143f),
+                new Vector2(-450f, -255f),
+                new Vector2(-700f, -425f)
+            };
+            laneScale = new[] { 0.72f, 1.05f, 1.5f };
+        }
+
+        void EnsureActors()
+        {
+            if (actors != null || arena == null)
+                return;
+
+            Transform existing = arena.Find("LaneActors");
+            if (existing != null)
+            {
+                actors = existing as RectTransform;
+                return;
             }
 
-            var go = new GameObject(label);
-            go.transform.SetParent(actorRoot, false);
-            var board = go.AddComponent<WorldBillboard>();
-            board.Prepare(height, sprite);
-            return board;
+            var go = new GameObject("LaneActors", typeof(RectTransform));
+            actors = go.GetComponent<RectTransform>();
+            actors.SetParent(arena, false);
+            actors.anchorMin = new Vector2(0.5f, 0.5f);
+            actors.anchorMax = new Vector2(0.5f, 0.5f);
+            actors.pivot = new Vector2(0.5f, 0.5f);
+            actors.anchoredPosition = Vector2.zero;
+            actors.sizeDelta = arena.rect.size;
+            actors.SetAsFirstSibling();
         }
 
-        void FitVirusClick(VirusView virus, Vector3 world)
-        {
-            if (virus == null || view == null || arena == null)
-                return;
-
-            Camera uiCamera = UiCamera();
-            Camera projector = uiCamera != null ? uiCamera : view;
-            Vector3 top = projector.WorldToScreenPoint(world + Vector3.up * (virusHeight * 0.5f));
-            Vector3 bottom = projector.WorldToScreenPoint(world - Vector3.up * (virusHeight * 0.5f));
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, top, uiCamera, out Vector2 topLocal))
-                return;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, bottom, uiCamera, out Vector2 bottomLocal))
-                return;
-
-            float height = Mathf.Abs(topLocal.y - bottomLocal.y);
-            virus.Rect.sizeDelta = new Vector2(height, height);
-        }
-
-        void FitClick(HeroView hero, Vector3 world)
-        {
-            if (hero == null || view == null || arena == null)
-                return;
-
-            Camera uiCamera = UiCamera();
-            Camera projector = uiCamera != null ? uiCamera : view;
-            Vector3 top = projector.WorldToScreenPoint(world + Vector3.up * (heroHeight * 0.5f));
-            Vector3 bottom = projector.WorldToScreenPoint(world - Vector3.up * (heroHeight * 0.5f));
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, top, uiCamera, out Vector2 topLocal))
-                return;
-            if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, bottom, uiCamera, out Vector2 bottomLocal))
-                return;
-
-            float height = Mathf.Abs(topLocal.y - bottomLocal.y);
-            var rect = hero.GetComponent<RectTransform>();
-            float aspect = 0.7f;
-            if (hero.Image != null && hero.Image.sprite != null)
-            {
-                Vector2 size = hero.Image.sprite.rect.size;
-                if (size.y > 1f)
-                    aspect = size.x / size.y;
-            }
-
-            rect.sizeDelta = new Vector2(height * aspect, height);
-        }
-
-        void ClearHeroBoards()
-        {
-            heroes.Clear();
-            heroViews.Clear();
-            if (actorRoot == null)
-                return;
-
-            for (int i = actorRoot.childCount - 1; i >= 0; i--)
-            {
-                Transform child = actorRoot.GetChild(i);
-                if (child.name.StartsWith("HeroBillboard"))
-                    Destroy(child.gameObject);
-            }
-        }
-
-        static void HideCard(Transform card)
-        {
-            if (card == null)
-                return;
-            var renderers = card.GetComponentsInChildren<Renderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
-                renderers[i].enabled = false;
-        }
-
-        static void HideUi(Image image)
+        static void Show(Image image)
         {
             if (image == null)
                 return;
             Color color = image.color;
-            color.a = 0f;
+            color.a = 1f;
             image.color = color;
-            image.raycastTarget = true;
-            if (image.canvasRenderer != null)
-                image.canvasRenderer.cullTransparentMesh = false;
         }
     }
 }

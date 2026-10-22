@@ -13,6 +13,8 @@ namespace FluMix
             public int cell;
             public float stepTimer;
             public float slide;
+            public float drop;
+            public bool airborne;
             public bool dying;
         }
 
@@ -27,6 +29,9 @@ namespace FluMix
         [SerializeField] Sprite greenSprite;
         [SerializeField] Sprite orangeSprite;
         [SerializeField] Sprite redSprite;
+        [SerializeField] Sprite greenDrop;
+        [SerializeField] Sprite orangeDrop;
+        [SerializeField] Sprite redDrop;
         [SerializeField] Sprite[] orangeFrames;
         [SerializeField] Sprite[] redFrames;
         [SerializeField] bool greenUsesSheet;
@@ -151,6 +156,15 @@ namespace FluMix
                 ActiveVirus virus = alive[i];
                 if (virus.dying || virus.view == null)
                     continue;
+
+                if (virus.airborne)
+                {
+                    virus.drop = Mathf.Min(1f, virus.drop + Time.deltaTime / 0.7f);
+                    PlaceVirus(virus, ProgressOf(virus));
+                    if (virus.drop >= 1f)
+                        Land(virus);
+                    continue;
+                }
 
                 if (virus.slide < 1f && virus.cell > 0)
                 {
@@ -282,11 +296,8 @@ namespace FluMix
 
             if (hero.Sheet != null && hero.Sheet.HasFrames)
                 hero.Sheet.PlayOnce(null);
-            else
-                StartCoroutine(fx.HeroRecoil(hero.GetComponent<RectTransform>()));
+            StartCoroutine(fx.HeroRecoil(hero.GetComponent<RectTransform>()));
 
-            Vector3 worldFrom = stage != null && stage.Ready ? stage.HeroWorld(hero.Id) : Vector3.zero;
-            Vector3 worldTo = stage != null && stage.Ready ? stage.LanePoint(virus.lane, ProgressOf(virus)) : Vector3.zero;
             Vector2 from = fx.ArenaPoint(hero.Muzzle);
             Vector2 to = virus.view.Rect.anchoredPosition;
             int delta = correct ? config.correctHeroScore : config.wrongHeroScore;
@@ -294,7 +305,7 @@ namespace FluMix
             yield return fx.PlayAimArrow(from, to);
             fx.PlayScorePopup(delta, to);
 
-            yield return fx.PlayBeam(hero.Id, from, to, correct, worldFrom, worldTo);
+            yield return fx.PlayBeam(hero.Id, from, to, correct);
 
             if (correct)
             {
@@ -370,17 +381,24 @@ namespace FluMix
             view.Clicked -= OnVirusClicked;
             view.Clicked += OnVirusClicked;
             FluMixSfx.Play("virus_spawn");
+            Sprite falling = DropSprite(type);
+            bool airborne = falling != null;
+            if (airborne)
+                view.Apply(type, falling, false);
+            int startCell = lane == 1 ? 3 : lane == 2 ? 1 : 0;
             var active = new ActiveVirus
             {
                 view = view,
                 lane = lane,
-                cell = 0,
-                slide = 1f
+                cell = startCell,
+                slide = 1f,
+                drop = airborne ? 0f : 1f,
+                airborne = airborne
             };
             view.Rect.localScale = Vector3.one;
             view.Pulse = !UsesSheet(type);
             alive.Add(active);
-            PlaceVirus(active, 0f);
+            PlaceVirus(active, ProgressOf(active));
             return true;
         }
 
@@ -413,7 +431,8 @@ namespace FluMix
                 return false;
 
             int lane = stage.LaneCount > 1 ? 1 : 0;
-            return stage.Project(stage.LanePoint(lane, 0f), out local);
+            local = stage.LaneLocal(lane, 0f);
+            return true;
         }
 
         void PlaceVirus(ActiveVirus virus, float progress)
@@ -423,7 +442,7 @@ namespace FluMix
 
             if (stage != null && stage.Ready)
             {
-                stage.PlaceVirus(virus.view, stage.LanePoint(virus.lane, progress));
+                stage.PlaceVirus(virus.view, virus.lane, progress, virus.airborne ? virus.drop : 1f);
                 return;
             }
 
@@ -484,6 +503,18 @@ namespace FluMix
             return origin + new Vector2(0f, offset);
         }
 
+        void Land(ActiveVirus virus)
+        {
+            if (virus == null || virus.view == null)
+                return;
+            virus.airborne = false;
+            virus.drop = 1f;
+            VirusType type = virus.view.Type;
+            virus.view.Apply(type, SpriteFor(type), UsesSheet(type));
+            virus.view.Pulse = !UsesSheet(type);
+            PlaceVirus(virus, ProgressOf(virus));
+        }
+
         Sprite SpriteFor(VirusType type)
         {
             switch (type)
@@ -491,6 +522,16 @@ namespace FluMix
                 case VirusType.Orange: return orangeSprite;
                 case VirusType.Red: return redSprite;
                 default: return greenSprite;
+            }
+        }
+
+        Sprite DropSprite(VirusType type)
+        {
+            switch (type)
+            {
+                case VirusType.Orange: return orangeDrop;
+                case VirusType.Red: return redDrop;
+                default: return greenDrop;
             }
         }
 

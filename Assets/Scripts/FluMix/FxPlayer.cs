@@ -571,14 +571,36 @@ namespace FluMix
 
         public IEnumerator PlayWinShield()
         {
-            if (winShield != null)
-                winShield.gameObject.SetActive(false);
+            if (winShield == null)
+                yield break;
 
             FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
             if (shots == null)
-                yield break;
+                shots = FindAnyObjectByType<FluMixShotVfx>();
+            if (shots != null)
+                shots.PlayWinOverUi();
 
-            yield return shots.PlayWinRoutine();
+            winShield.gameObject.SetActive(true);
+            winShield.rectTransform.SetAsLastSibling();
+            float duration = config != null && config.winShieldDuration > 0.05f ? config.winShieldDuration : 0.45f;
+            float start = config != null ? config.winShieldStartScale : 0.4f;
+            float peak = config != null ? config.winShieldPeakScale : 1.05f;
+            float sway = config != null ? config.winShieldSwayDegrees : 8f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float u = Mathf.Clamp01(elapsed / duration);
+                float scale = u < 0.6f
+                    ? Mathf.Lerp(start, peak, u / 0.6f)
+                    : Mathf.Lerp(peak, 1f, (u - 0.6f) / 0.4f);
+                winShield.rectTransform.localScale = Vector3.one * scale;
+                winShield.rectTransform.localEulerAngles = new Vector3(0f, 0f, Mathf.Sin(u * Mathf.PI * 2f) * sway);
+                yield return null;
+            }
+
+            winShield.rectTransform.localScale = Vector3.one;
+            winShield.rectTransform.localEulerAngles = Vector3.zero;
         }
 
         public void HideWinShield()
@@ -653,25 +675,55 @@ namespace FluMix
             }
         }
 
-        public IEnumerator PlayBeam(HeroId hero, Vector2 from, Vector2 to, bool connect, Vector3 worldFrom, Vector3 worldTo)
+        public IEnumerator PlayBeam(HeroId hero, Vector2 from, Vector2 to, bool connect)
         {
-            if (beam != null)
-                beam.gameObject.SetActive(false);
-
             Vector2 direction = to - from;
             float distance = direction.magnitude;
             if (distance < 1f)
                 distance = 1f;
-            float travel = connect ? distance : Mathf.Max(config.beamThickness, distance - config.wrongBeamGap);
+            float thickness = config != null ? config.beamThickness : 72f;
+            float travel = connect ? distance : Mathf.Max(thickness, distance - config.wrongBeamGap);
             Vector2 endPoint = from + direction.normalized * travel;
+            float angle = Mathf.Atan2(direction.y, direction.x) * Mathf.Rad2Deg;
             FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
             if (shots == null)
                 shots = FindAnyObjectByType<FluMixShotVfx>();
-            if (shots != null)
+            bool particles = shots != null && arena != null && shots.PlayOverUi(hero, arena, from, endPoint, connect);
+            if (particles)
             {
-                Vector3 start = worldFrom.sqrMagnitude > 0.01f ? worldFrom : arena != null ? arena.TransformPoint(from) : worldFrom;
-                Vector3 finish = worldTo.sqrMagnitude > 0.01f ? worldTo : arena != null ? arena.TransformPoint(endPoint) : worldTo;
-                shots.PlayShot(hero, start, finish, connect);
+                float shotElapsed = 0f;
+                float shotSeconds = config != null ? config.beamTravelSeconds : 0.18f;
+                while (shotElapsed < shotSeconds)
+                {
+                    shotElapsed += Time.deltaTime;
+                    yield return null;
+                }
+
+                yield return PlayImpact(endPoint, angle);
+                yield break;
+            }
+
+            if (beam == null)
+                yield break;
+
+            Sprite art = hero == HeroId.G ? beamG : hero == HeroId.T ? beamT : beamA;
+            if (art != null)
+                beam.sprite = art;
+
+            string cue = hero == HeroId.A ? "beam_blue" : hero == HeroId.G ? "beam_green" : "beam_pink";
+            FluMixSfx.Play(cue);
+            FluMixSfx.Play(connect ? "impact_correct" : "impact_wrong");
+
+            beam.gameObject.SetActive(true);
+            beam.rectTransform.SetAsLastSibling();
+            beam.rectTransform.anchoredPosition = from;
+            beam.rectTransform.localEulerAngles = new Vector3(0f, 0f, angle);
+            float core = config != null ? config.beamCoreThickness : 14f;
+            float start = config != null ? Mathf.Clamp(config.beamStartScale, 0.05f, 1f) : 0.15f;
+            if (beamCore != null)
+            {
+                beamCore.rectTransform.anchoredPosition = Vector2.zero;
+                beamCore.gameObject.SetActive(true);
             }
 
             float elapsed = 0f;
@@ -679,8 +731,17 @@ namespace FluMix
             while (elapsed < seconds)
             {
                 elapsed += Time.deltaTime;
+                float u = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, seconds));
+                float length = Mathf.Lerp(travel * start, travel, u);
+                beam.rectTransform.sizeDelta = new Vector2(length, thickness);
+                if (beamCore != null)
+                    beamCore.rectTransform.sizeDelta = new Vector2(length, core);
                 yield return null;
             }
+
+            beam.rectTransform.sizeDelta = new Vector2(travel, thickness);
+            yield return PlayImpact(endPoint, angle);
+            beam.gameObject.SetActive(false);
         }
 
         RectTransform aimArrow;
