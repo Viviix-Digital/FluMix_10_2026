@@ -300,12 +300,12 @@ namespace FluMix
                     Mathf.Cos(Time.time * speed * 0.8f) * config.bossShakePixels);
             }
 
-            if (warningPulse && warningPanel != null)
+            if (warningPulse && darken != null)
             {
-                float pulse = 0.72f + 0.28f * (Mathf.Sin(Time.time * 6f) * 0.5f + 0.5f);
-                var image = warningPanel.GetComponent<Image>();
-                if (image != null)
-                    image.color = new Color(pulse, pulse, pulse, 1f);
+                float wave = Mathf.Sin(Time.time * 6f) * 0.5f + 0.5f;
+                float peak = config != null ? config.darkenAlpha : 0.6f;
+                float alpha = Mathf.Lerp(peak * 0.35f, peak, wave);
+                darken.color = new Color(0f, 0f, 0f, alpha);
             }
 
             if (shakeTime > 0f && shakeRoot != null)
@@ -362,10 +362,14 @@ namespace FluMix
             }
 
             if (warningPanel != null)
+            {
                 warningPanel.gameObject.SetActive(true);
+                var image = warningPanel.GetComponent<Image>();
+                if (image != null)
+                    image.color = Color.white;
+            }
             if (countdown != null)
                 countdown.gameObject.SetActive(true);
-            warningPulse = true;
 
             float pop = config.warningPopSeconds;
             float elapsed = 0f;
@@ -380,6 +384,8 @@ namespace FluMix
                     darken.color = new Color(0f, 0f, 0f, Mathf.Lerp(0f, config.darkenAlpha, u));
                 yield return null;
             }
+
+            warningPulse = true;
 
             for (int step = config.countdownFrom; step >= 1; step--)
             {

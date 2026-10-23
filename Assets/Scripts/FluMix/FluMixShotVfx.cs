@@ -63,7 +63,7 @@ namespace FluMix
                 start.z = shotPlaneZ;
                 end.z = shotPlaneZ;
 
-                PlaceShot(shot, heroes[i], start, end, true);
+                PlaceShot(shot, start, end, true);
                 if (shot.hit != null)
                     SimulateHit(shot.hit.transform);
             }
@@ -108,7 +108,7 @@ namespace FluMix
             HideLine(shotA);
             HideLine(shotG);
             HideLine(shotT);
-            PlaceShot(shot, hero, worldStart, worldEnd, connect);
+            PlaceShot(shot, worldStart, worldEnd, connect);
 
             if (shot.hit != null)
                 PlayParticles(shot.hit.transform);
@@ -127,7 +127,7 @@ namespace FluMix
             shotRoutine = null;
         }
 
-        void PlaceShot(LineShot shot, HeroId hero, Vector3 worldStart, Vector3 worldEnd, bool connect)
+        void PlaceShot(LineShot shot, Vector3 worldStart, Vector3 worldEnd, bool connect)
         {
             Vector3 end = connect ? worldEnd : ShortEnd(worldStart, worldEnd);
             Vector3 direction = end - worldStart;
@@ -145,8 +145,6 @@ namespace FluMix
             shot.hit.SetActive(true);
             shot.hit.transform.position = end;
             shot.hit.transform.localRotation = SplashLocalRotation;
-            if (hero == HeroId.T)
-                shot.hit.transform.localScale = Vector3.one * Mathf.Clamp(distance * 0.22f, 1.6f, 4.2f);
         }
 
         void EnsureLineShots()
