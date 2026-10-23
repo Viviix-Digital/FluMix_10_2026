@@ -10,6 +10,7 @@ namespace FluMix
         [SerializeField] HeroId id;
         [SerializeField] Image image;
         [SerializeField] Button button;
+        [Tooltip("Vi tri bat dau hieu ung ban (khong phai tam sprite). Keo trong Prefab/Scene de chinh.")]
         [SerializeField] RectTransform muzzle;
         [SerializeField] SpriteSheetPlayer sheet;
 

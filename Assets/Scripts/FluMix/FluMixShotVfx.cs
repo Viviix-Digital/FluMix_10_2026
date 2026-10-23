@@ -5,16 +5,12 @@ namespace FluMix
 {
     public class FluMixShotVfx : MonoBehaviour
     {
-        [SerializeField] GameObject beamPrefab;
         [SerializeField] GameObject shieldPrefab;
-        [SerializeField] Transform sceneBeams;
         [SerializeField] Transform sceneShield;
-        [SerializeField] float authoredBeamLength = 12.8f;
-        [SerializeField] GameObject lineLaserPrefab;
-        [SerializeField] GameObject splashPrefabA;
-        [SerializeField] GameObject splashPrefabG;
-        [SerializeField] GameObject splashPrefabT;
-        [SerializeField] GameObject slashOncePrefab;
+        [SerializeField] float shotPlaneZ = 111.73f;
+        [SerializeField] GameObject lineShotAPrefab;
+        [SerializeField] GameObject lineShotGPrefab;
+        [SerializeField] GameObject lineShotTPrefab;
 
         class LineShot
         {
@@ -23,28 +19,16 @@ namespace FluMix
             public GameObject hit;
         }
 
-        Transform beamsRoot;
         Transform shield;
         Coroutine shotRoutine;
         LineShot shotA;
         LineShot shotG;
         LineShot shotT;
 
-        static readonly Color BeamCore = new Color(0.82f, 1f, 1f, 1f);
-        static readonly Color BeamEdge = new Color(0.25f, 0.86f, 1f, 1f);
-        static readonly Color SplashHot = new Color(1.45f, 2.05f, 2.55f, 1f);
-        static readonly Color SplashCool = new Color(0.45f, 1.25f, 2.35f, 1f);
         static readonly Quaternion SplashLocalRotation = Quaternion.Euler(0f, 180f, 105f);
-
-        public void Bind(GameObject beams, GameObject winShield)
-        {
-            beamPrefab = beams;
-            shieldPrefab = winShield;
-        }
 
         void Awake()
         {
-            ResolveBeams();
             ResolveShield();
             Transform preview = transform.Find("Shot Preview");
             if (preview != null)
@@ -56,9 +40,8 @@ namespace FluMix
         {
             Transform existing = transform.Find("Shot Preview");
             if (existing != null)
-                DestroyObject(existing.gameObject);
+                DestroyOwned(existing.gameObject);
 
-            ResolveBeams();
             var preview = new GameObject("Shot Preview");
             preview.transform.SetParent(transform, false);
             RectTransform space = LargestCanvas();
@@ -77,11 +60,8 @@ namespace FluMix
                 Vector3 end = space != null
                     ? space.TransformPoint(new Vector3(to[i].x, to[i].y, 0f))
                     : start + Vector3.right * 6f;
-                if (beamsRoot != null)
-                {
-                    start.z = beamsRoot.position.z;
-                    end.z = beamsRoot.position.z;
-                }
+                start.z = shotPlaneZ;
+                end.z = shotPlaneZ;
 
                 PlaceShot(shot, heroes[i], start, end, true);
                 if (shot.hit != null)
@@ -91,34 +71,16 @@ namespace FluMix
 
         public bool PlayOverUi(HeroId hero, RectTransform space, Vector2 fromLocal, Vector2 toLocal, bool connect, bool impactSound = true)
         {
-            ResolveBeams();
             if (space == null)
                 return false;
 
-            SilenceOldBeams();
             Vector3 start = space.TransformPoint(new Vector3(fromLocal.x, fromLocal.y, 0f));
             Vector3 end = space.TransformPoint(new Vector3(toLocal.x, toLocal.y, 0f));
-            if (beamsRoot != null)
-            {
-                start.z = beamsRoot.position.z;
-                end.z = beamsRoot.position.z;
-            }
+            start.z = shotPlaneZ;
+            end.z = shotPlaneZ;
 
             PlayShot(hero, start, end, connect, impactSound);
             return true;
-        }
-
-        void SilenceOldBeams()
-        {
-            if (beamsRoot == null)
-                return;
-
-            for (int i = 0; i < beamsRoot.childCount; i++)
-            {
-                Transform child = beamsRoot.GetChild(i);
-                if (child.name == "PrismStar" || child.name == "RainbowLance" || child.name == "ElectricSword" || child.name == "Impact" || child.name == "EnergyBloom")
-                    child.gameObject.SetActive(false);
-            }
         }
 
         public void PlayWinOverUi()
@@ -198,79 +160,106 @@ namespace FluMix
 
         LineShot MakeShot(HeroId hero, string name)
         {
-            if (hero == HeroId.T)
-            {
-                LineShot shot = BuildShot(lineLaserPrefab, null, name, null);
-                if (shot != null && slashOncePrefab != null)
-                {
-                    shot.hit = Instantiate(slashOncePrefab, shot.root.transform);
-                    shot.hit.name = "SlashOnce";
-                    PaintWhite(shot.hit);
-                    shot.hit.SetActive(false);
-                }
-
-                return shot;
-            }
-
-            GameObject splash = hero == HeroId.A ? splashPrefabA : splashPrefabG;
-            return BuildShot(lineLaserPrefab, splash, name, "Hit");
+            GameObject configured = hero == HeroId.A ? lineShotAPrefab
+                : hero == HeroId.G ? lineShotGPrefab
+                : lineShotTPrefab;
+            return BuildConfiguredShot(configured, name);
         }
 
-        LineShot BuildShot(GameObject laserPrefab, GameObject splashPrefab, string name, string splashChild)
+        LineShot BuildConfiguredShot(GameObject prefab, string name)
         {
-            if (laserPrefab == null)
+            if (prefab == null)
                 return null;
 
-            var root = Instantiate(laserPrefab, transform);
+            var root = Instantiate(prefab, transform);
             root.name = name;
+            root.transform.localPosition = Vector3.zero;
+            root.transform.localRotation = Quaternion.identity;
+            root.transform.localScale = Vector3.one;
             var hovl = root.GetComponent<Hovl_Laser>();
             if (hovl != null)
                 hovl.enabled = false;
-            var line = root.GetComponent<LineRenderer>();
-            SilenceLaserParticles(root, hovl);
-            GameObject hit = TakeSplash(splashPrefab, splashChild);
+
+            GameObject hit = FindSplash(root.transform);
+            SilenceBodyParticles(root, hit);
             if (hit != null)
-                hit.transform.SetParent(root.transform, true);
-            LineRenderer[] lines = StackLines(root, line);
-            for (int i = 0; i < lines.Length; i++)
-                PaintLine(lines[i], i);
-            if (hit != null)
-                PaintParticles(hit);
+                hit.SetActive(false);
+
+            LineRenderer[] lines = CollectLines(root);
             root.SetActive(false);
             return new LineShot { root = root, lines = lines, hit = hit };
         }
 
-        static void SilenceLaserParticles(GameObject root, Hovl_Laser hovl)
+        static LineRenderer[] CollectLines(GameObject root)
         {
-            if (hovl != null && hovl.HitEffect != null)
+            var ordered = new System.Collections.Generic.List<LineRenderer>(3);
+            LineRenderer rootLine = root.GetComponent<LineRenderer>();
+            if (rootLine != null)
+                ordered.Add(rootLine);
+            Transform glow = root.transform.Find("LineGlow");
+            Transform core = root.transform.Find("LineCore");
+            if (glow != null)
+            {
+                LineRenderer line = glow.GetComponent<LineRenderer>();
+                if (line != null)
+                    ordered.Add(line);
+            }
+
+            if (core != null)
+            {
+                LineRenderer line = core.GetComponent<LineRenderer>();
+                if (line != null)
+                    ordered.Add(line);
+            }
+
+            if (ordered.Count > 0)
+                return ordered.ToArray();
+            return root.GetComponentsInChildren<LineRenderer>(true);
+        }
+
+        static GameObject FindSplash(Transform root)
+        {
+            Transform slash = FindDeep(root, "SlashOnce");
+            if (slash != null)
+                return slash.gameObject;
+
+            Transform best = null;
+            Transform[] all = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i].name != "Hit")
+                    continue;
+                if (best == null || all[i].gameObject.activeSelf)
+                    best = all[i];
+            }
+
+            return best != null ? best.gameObject : null;
+        }
+
+        static void SilenceBodyParticles(GameObject root, GameObject splash)
+        {
+            var hovl = root.GetComponent<Hovl_Laser>();
+            if (hovl != null && hovl.HitEffect != null && (splash == null || hovl.HitEffect != splash))
                 hovl.HitEffect.SetActive(false);
+
+            Transform[] all = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i].name != "Hit")
+                    continue;
+                if (splash != null && all[i] == splash.transform)
+                    continue;
+                all[i].gameObject.SetActive(false);
+            }
+
             ParticleSystem[] systems = root.GetComponentsInChildren<ParticleSystem>(true);
             for (int i = 0; i < systems.Length; i++)
+            {
+                Transform particle = systems[i].transform;
+                if (splash != null && (particle == splash.transform || particle.IsChildOf(splash.transform)))
+                    continue;
                 systems[i].gameObject.SetActive(false);
-        }
-
-        static LineRenderer[] StackLines(GameObject root, LineRenderer source)
-        {
-            var lines = new LineRenderer[3];
-            lines[0] = source;
-            lines[1] = CopyLine(root.transform, source, "LineGlow");
-            lines[2] = CopyLine(root.transform, source, "LineCore");
-            return lines;
-        }
-
-        static LineRenderer CopyLine(Transform parent, LineRenderer source, string name)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var line = go.AddComponent<LineRenderer>();
-            line.sharedMaterial = source.sharedMaterial;
-            line.textureMode = source.textureMode;
-            line.alignment = source.alignment;
-            line.numCapVertices = 5;
-            line.numCornerVertices = 2;
-            line.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            line.receiveShadows = false;
-            return line;
+            }
         }
 
         static void PlaceLines(LineRenderer[] lines, Vector3 start, Vector3 end, float distance)
@@ -286,67 +275,6 @@ namespace FluMix
                 line.SetPosition(0, start);
                 line.SetPosition(1, end);
                 line.widthMultiplier = Mathf.Clamp(i < widths.Length ? widths[i] : distance * 0.04f, 0.05f, 5f);
-                PaintLine(line, i);
-            }
-        }
-
-        static void PaintLine(LineRenderer line, int layer)
-        {
-            if (line == null)
-                return;
-
-            Color color = layer == 0 ? new Color(0.35f, 0.78f, 1f, 0.55f)
-                : layer == 2 ? new Color(0.95f, 1f, 1f, 1f)
-                : BeamEdge;
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[]
-                {
-                    new GradientColorKey(Color.Lerp(color, BeamCore, 0.35f), 0f),
-                    new GradientColorKey(color, 0.7f),
-                    new GradientColorKey(Color.Lerp(color, Color.white, 0.25f), 1f)
-                },
-                new[]
-                {
-                    new GradientAlphaKey(layer == 0 ? 0.45f : 1f, 0f),
-                    new GradientAlphaKey(layer == 0 ? 0.35f : 1f, 0.8f),
-                    new GradientAlphaKey(0.7f, 1f)
-                });
-            line.colorGradient = gradient;
-        }
-
-        static void PaintWhite(GameObject root)
-        {
-            ParticleSystem[] systems = root.GetComponentsInChildren<ParticleSystem>(true);
-            for (int i = 0; i < systems.Length; i++)
-            {
-                string particleName = systems[i].name.ToLowerInvariant();
-                if (particleName.Contains("smoke") || particleName.Contains("shadow"))
-                {
-                    systems[i].gameObject.SetActive(false);
-                    continue;
-                }
-
-                ParticleSystem.MainModule main = systems[i].main;
-                main.startColor = Color.white;
-                main.loop = false;
-                ParticleSystem.ColorOverLifetimeModule life = systems[i].colorOverLifetime;
-                if (life.enabled)
-                {
-                    var gradient = new Gradient();
-                    gradient.SetKeys(
-                        new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(Color.white, 1f) },
-                        new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(0f, 1f) });
-                    life.color = new ParticleSystem.MinMaxGradient(gradient);
-                }
-
-                ParticleSystemRenderer renderer = systems[i].GetComponent<ParticleSystemRenderer>();
-                if (renderer == null)
-                    continue;
-                var block = new MaterialPropertyBlock();
-                renderer.GetPropertyBlock(block);
-                block.SetColor("_Color", Color.white);
-                renderer.SetPropertyBlock(block);
             }
         }
 
@@ -361,30 +289,7 @@ namespace FluMix
             }
         }
 
-        static GameObject TakeSplash(GameObject splashPrefab, string childName)
-        {
-            if (splashPrefab == null)
-                return null;
-
-            var copy = Instantiate(splashPrefab);
-            var hovl = copy.GetComponent<Hovl_Laser>();
-            if (hovl != null)
-                hovl.enabled = false;
-            Transform found = FindDeep(copy.transform, childName);
-            if (found == null && hovl != null && hovl.HitEffect != null)
-                found = hovl.HitEffect.transform;
-            GameObject splash = null;
-            if (found != null)
-            {
-                found.SetParent(null, false);
-                splash = found.gameObject;
-            }
-
-            DestroyObject(copy);
-            return splash;
-        }
-
-        static void DestroyObject(Object target)
+        static void DestroyOwned(Object target)
         {
             if (target == null)
                 return;
@@ -408,36 +313,12 @@ namespace FluMix
             return null;
         }
 
-        static void PaintParticles(GameObject root)
-        {
-            ParticleSystem[] systems = root.GetComponentsInChildren<ParticleSystem>(true);
-            for (int i = 0; i < systems.Length; i++)
-            {
-                ParticleSystem.MainModule main = systems[i].main;
-                main.startColor = new ParticleSystem.MinMaxGradient(SplashHot, SplashCool);
-            }
-        }
-
         static void HideLine(LineShot shot)
         {
             if (shot == null || shot.root == null)
                 return;
             StopParticles(shot.root.transform);
             shot.root.SetActive(false);
-        }
-
-        public IEnumerator PlayWinRoutine()
-        {
-            ResolveShield();
-            if (shield == null)
-                yield break;
-
-            PlaceShield();
-            shield.gameObject.SetActive(true);
-            float seconds = PlayParticles(shield);
-            FluMixSfx.Play("quiz_correct");
-            yield return new WaitForSeconds(seconds);
-            HideWin();
         }
 
         public void HideWin()
@@ -448,37 +329,13 @@ namespace FluMix
             shield.gameObject.SetActive(false);
         }
 
-        Vector3 OnPlane(RectTransform space, Vector2 local)
-        {
-            Vector3 world = space.TransformPoint(new Vector3(local.x, local.y, 0f));
-            if (beamsRoot != null)
-                world.z = beamsRoot.position.z;
-            return world;
-        }
-
         void PlaceShield()
         {
-            Transform canvas = beamsRoot != null ? beamsRoot.parent : null;
+            RectTransform canvas = LargestCanvas();
             Vector3 center = canvas != null ? canvas.position : shield.position;
-            if (beamsRoot != null)
-                center.z = beamsRoot.position.z;
+            center.z = shotPlaneZ;
             shield.position = center;
             shield.rotation = Quaternion.identity;
-        }
-
-        void ResolveBeams()
-        {
-            if (beamsRoot != null)
-                return;
-
-            Transform located = sceneBeams;
-            if (located == null)
-                located = FindNamed("EnergyBeams", true);
-            if (located == null)
-                return;
-
-            beamsRoot = located;
-            sceneBeams = located;
         }
 
         void ResolveShield()
@@ -584,12 +441,6 @@ namespace FluMix
             ParticleSystem[] systems = root.GetComponentsInChildren<ParticleSystem>(true);
             for (int i = 0; i < systems.Length; i++)
                 systems[i].Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-        }
-
-        static void SetActive(Transform target, bool active)
-        {
-            if (target != null && target.gameObject.activeSelf != active)
-                target.gameObject.SetActive(active);
         }
     }
 }

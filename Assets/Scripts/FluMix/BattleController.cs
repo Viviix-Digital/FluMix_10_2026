@@ -493,6 +493,7 @@ namespace FluMix
             launcher.flying = true;
             launcher.lockedOrigin = HeroCenter(hero);
             Vector2 origin = launcher.lockedOrigin;
+            Vector2 shotStart = MuzzleOf(hero);
             Vector2 direction = launcher.aim.sqrMagnitude > 1f ? launcher.aim.normalized : Vector2.right;
             if (hero.Sheet != null && hero.Sheet.HasFrames)
                 hero.Sheet.PlayOnce(null);
@@ -509,7 +510,7 @@ namespace FluMix
                 hit = RayHit(origin, direction);
             }
             if (fx != null)
-                yield return fx.PlayBeam(hero.Id, origin, end, true, false);
+                yield return fx.PlayBeam(hero.Id, shotStart, end, true, false);
 
             launcher.flying = false;
             if (!running || hit == null || hit.view == null)
