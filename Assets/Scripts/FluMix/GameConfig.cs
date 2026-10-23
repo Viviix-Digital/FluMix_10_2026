@@ -108,7 +108,7 @@ namespace FluMix
         public float eggMinSpeed = 520f;
         public float eggMaxSpeed = 1320f;
         public float eggDragMax = 460f;
-        public float eggHitRadius = 78f;
+        public float eggHitRadius = 110f;
         public int aimDashCount = 22;
         public float wrongMarkWidth = 220f;
         public float wrongMarkHeight = 64f;

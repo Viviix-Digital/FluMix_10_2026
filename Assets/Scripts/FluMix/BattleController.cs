@@ -588,7 +588,7 @@ namespace FluMix
             int target = Mathf.Max(1, config.simultaneousViruses);
             while (alive.Count < target)
             {
-                VirusType type = pendingSpawn ?? NextSpawnType();
+                VirusType type = pendingSpawn ?? RandomType();
                 pendingSpawn = null;
                 if (!SpawnOne(type))
                     break;
@@ -810,48 +810,6 @@ namespace FluMix
             return false;
         }
 
-        VirusType NextSpawnType()
-        {
-            bool green = false;
-            bool orange = false;
-            bool red = false;
-            for (int i = 0; i < alive.Count; i++)
-            {
-                if (alive[i] == null || alive[i].view == null)
-                    continue;
-                switch (alive[i].view.Type)
-                {
-                    case VirusType.Orange: orange = true; break;
-                    case VirusType.Red: red = true; break;
-                    default: green = true; break;
-                }
-            }
-
-            int missing = 0;
-            if (!green) missing++;
-            if (!orange) missing++;
-            if (!red) missing++;
-            if (missing == 0)
-                return RandomType();
-
-            int pick = Random.Range(0, missing);
-            if (!green)
-            {
-                if (pick == 0)
-                    return VirusType.Green;
-                pick--;
-            }
-
-            if (!orange)
-            {
-                if (pick == 0)
-                    return VirusType.Orange;
-                pick--;
-            }
-
-            return VirusType.Red;
-        }
-
         static VirusType RandomType()
         {
             return (VirusType)Random.Range(0, 3);
@@ -955,7 +913,7 @@ namespace FluMix
         {
             ActiveVirus best = null;
             float bestAlong = float.MaxValue;
-            float hit = config != null && config.eggHitRadius > 1f ? config.eggHitRadius : 78f;
+            float hit = config != null && config.eggHitRadius > 1f ? config.eggHitRadius : 110f;
             for (int i = 0; i < alive.Count; i++)
             {
                 ActiveVirus virus = alive[i];
@@ -970,7 +928,7 @@ namespace FluMix
 
                 float side = Mathf.Abs(delta.x * direction.y - delta.y * direction.x);
                 float scale = Mathf.Max(0.35f, virus.view.Rect.localScale.x);
-                float radius = hit * scale + 30f;
+                float radius = hit * scale + 48f;
                 if (side > radius || along >= bestAlong)
                     continue;
 

@@ -78,6 +78,7 @@ MonoBehaviour:
   deathSeconds: 0.28
   laneSpacing: 150
   heroRecoilPixels: 18
+  eggHitRadius: 110
   wrongMarkWidth: 220
   wrongMarkHeight: 64
   wrongMarkSeconds: 0.45
