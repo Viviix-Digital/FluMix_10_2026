@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.coffee.ui-effect": "https://github.com/mob-sakai/UIEffect.git?path=Packages/src",
     "com.ivanmurzak.unity.mcp": "0.93.2",
     "com.ivanmurzak.unity.mcp.animation": "1.2.34",
     "com.ivanmurzak.unity.mcp.particlesystem": "1.2.33",

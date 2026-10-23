@@ -702,7 +702,6 @@ namespace FluMix
                     yield return null;
                 }
 
-                yield return PlayImpact(endPoint, angle);
                 yield break;
             }
 

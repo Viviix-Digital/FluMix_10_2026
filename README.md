@@ -1,35 +1,32 @@
-# FluMix — luồng gọi API backend
+# FluMix — Tài liệu JSON API cơ bản
 
-Client Unity không gọi URL trực tiếp từ màn hình. Mỗi màn gọi một method trên `AppServices`. Bản đang chạy dùng file JSON local. Backend HTTP thay đúng các method này, không đổi gameplay.
+## Tổng quan
 
-Điểm vào: `Assets/Scripts/FluMix/Data/AppServices.cs`.
+| Mục đích              | Method | Endpoint                    |
+| --------------------- | ------ | --------------------------- |
+| Đăng nhập             | `POST` | `/api/auth/login`           |
+| Lấy danh sách câu hỏi | `GET`  | `/api/questions`            |
+| Nộp điểm cuối ván     | `POST` | `/api/leaderboard`          |
+| Đọc bảng xếp hạng     | `GET`  | `/api/leaderboard?limit=10` |
 
-| Việc | Interface | Bản local hiện tại |
-| --- | --- | --- |
-| Đăng nhập | `IPlayerRepository` | `LocalJsonPlayerRepository` |
-| Ngân hàng câu hỏi | `IQuestionRepository` | `LocalJsonQuestionRepository` |
-| Bảng xếp hạng | `ILeaderboardRepository` | `LocalJsonLeaderboardRepository` |
-
-File local nằm ở `StreamingAssets/FluMix/`. Lần chạy đầu, game copy sang `Application.persistentDataPath/FluMix/` rồi đọc/ghi bản đó.
-
-Base URL dưới đây là hợp đồng để gắn HTTP. Chưa có host thật trong project.
+Base URL:
 
 ```text
 https://{host}/api
 Content-Type: application/json
 ```
 
-Điểm trong trận do client tính. Backend chỉ nhận điểm cuối khi hết giờ.
+Dữ liệu gửi và nhận đều dùng định dạng JSON. Điểm trong ván được tính trong quá trình chơi, API chỉ nhận tổng điểm khi ván kết thúc.
 
 ## 1. Đăng nhập
 
-Khi nào: người chơi bấm nút bắt đầu ở màn login.
-
-Gọi: `LoginView.Submit` → `Players.TryLogin(username, password)`.
+Sử dụng khi người chơi xác nhận thông tin tại màn đăng nhập.
 
 ```http
 POST /api/auth/login
 ```
+
+Request:
 
 ```json
 {
@@ -38,7 +35,10 @@ POST /api/auth/login
 }
 ```
 
-Client `Trim()` username trước khi gửi. Password giữ nguyên, kể cả chuỗi rỗng.
+Quy ước dữ liệu:
+
+- `username`: tên đăng nhập, được loại bỏ khoảng trắng ở hai đầu trước khi gửi.
+- `password`: mật khẩu, giữ nguyên nội dung nhập vào, kể cả chuỗi rỗng.
 
 Thành công `200`:
 
@@ -49,25 +49,20 @@ Thành công `200`:
 }
 ```
 
-Client lưu record này. `displayName` là tên gửi lên bảng xếp hạng. Màn tiếp theo là luật chơi. Chưa gọi API nào khác.
+- `displayName` là tên hiển thị và được dùng làm tên khi nộp điểm.
+- Response không chứa `password`.
 
-Thất bại `401` khi sai tài khoản hoặc sai mật khẩu. Client không phân biệt hai trường hợp: rung khung đăng nhập và ở lại màn login.
+Thất bại `401` khi tên đăng nhập hoặc mật khẩu không đúng. Hai trường hợp này dùng chung một kết quả trả về.
 
-Không gửi password lại trong response. Backend lưu mật khẩu đã băm.
+## 2. Lấy danh sách câu hỏi
 
-Quên mật khẩu trên UI chỉ hiện chữ “Mật khẩu lưu trên máy này”. Không gọi API.
-
-## 2. Lấy câu hỏi
-
-Khi nào: boss bắt đầu, trong `BossSequence`, trước khi hiện câu.
-
-Gọi: `Questions.LoadAll()`.
+Sử dụng khi bắt đầu phần câu hỏi, trước khi câu hỏi được hiển thị.
 
 ```http
 GET /api/questions
 ```
 
-`200`:
+Thành công `200`:
 
 ```json
 {
@@ -83,23 +78,25 @@ GET /api/questions
 }
 ```
 
-`correctIndex` là chỉ số 0 của `options`.
+Quy ước dữ liệu:
 
-Client giữ cả mảng và cache đến khi reload. Mỗi lần boss xuất hiện chỉ lấy câu tiếp theo trên máy (`QuestionPresenter.TakeNext`), không gọi lại API từng câu. Hết mảng thì quay lại câu đầu.
+- `id`: mã câu hỏi.
+- `prompt`: nội dung câu hỏi.
+- `options`: danh sách đáp án.
+- `correctIndex`: vị trí đáp án đúng trong `options`, bắt đầu từ `0`.
+- `explanation`: nội dung giải thích sau khi trả lời.
 
-`FetchRemote()` có trên interface nhưng gameplay không gọi. HTTP sau này nhét vào `LoadAll()`, không gọi `FetchRemote()` từ trận đấu.
-
-Bắn virus, cộng/trừ điểm, đổi loại virus không gọi API.
+Danh sách câu hỏi được giữ lại để dùng cho các câu tiếp theo, không gọi API riêng cho từng câu. Khi danh sách đã dùng hết, thứ tự câu hỏi bắt đầu lại từ câu đầu tiên.
 
 ## 3. Nộp điểm cuối ván
 
-Khi nào: hết giờ, hoặc boss kết thúc đúng lúc ván đã hết. `GameFlow.EndRound` gọi một lần.
-
-Gọi: `Leaderboard.Submit(displayName, score)`.
+Sử dụng khi ván chơi kết thúc. Mỗi ván chỉ nộp tổng điểm một lần.
 
 ```http
 POST /api/leaderboard
 ```
+
+Request:
 
 ```json
 {
@@ -108,9 +105,12 @@ POST /api/leaderboard
 }
 ```
 
-`name` là `displayName` lúc login. Chưa login thì client gửi `"CHIẾN BINH 01"`. `score` là tổng điểm trên HUD, có thể âm.
+Quy ước dữ liệu:
 
-`200`:
+- `name`: dùng `displayName` nhận được khi đăng nhập. Nếu chưa có thông tin đăng nhập, giá trị mặc định là `"CHIẾN BINH 01"`.
+- `score`: tổng điểm của ván, có thể là số âm.
+
+Thành công `200`:
 
 ```json
 {
@@ -118,32 +118,29 @@ POST /api/leaderboard
 }
 ```
 
-`rank` bắt đầu từ 1, tính trên toàn bộ điểm đã nộp, trước khi cắt top 10. Hạng 11 vẫn trả `11` dù bảng chỉ giữ 10 người.
+- `rank` là thứ hạng của điểm vừa nộp, bắt đầu từ `1`.
+- Thứ hạng được tính trên toàn bộ điểm đã nộp, trước khi danh sách hiển thị được giới hạn ở 10 vị trí đầu. Ví dụ: thứ hạng `11` vẫn được trả về là `11`.
 
-Client hiện hạng này ở màn kết quả. Cờ `submitted` chặn nộp lần hai trong cùng ván.
+### Cách tính điểm trong ván
 
-Điểm client đang cộng:
+| Hành động                                   | Điểm |
+| ------------------------------------------- | ---: |
+| Bắn đúng loại virus                         | +100 |
+| Bắn sai loại virus hoặc để virus chạm thành |  -50 |
+| Trả lời đúng câu hỏi                        | +200 |
+| Trả lời sai hoặc hết thời gian trả lời      | -100 |
 
-| Việc | Điểm |
-| --- | --- |
-| Bắn đúng loại virus | +100 |
-| Bắn sai loại, hoặc virus chạm thành | -50 |
-| Trả lời đúng câu boss | +200 |
-| Trả lời sai hoặc hết giờ câu hỏi | -100 |
-
-Backend không nhận từng phát bắn. Chỉ nhận tổng ở cuối ván.
+API không nhận điểm của từng hành động riêng lẻ, chỉ nhận tổng điểm cuối ván.
 
 ## 4. Đọc bảng xếp hạng
 
-Khi nào: từ màn kết quả bấm sang bảng xếp hạng. `LeaderboardView` cũng đọc lại mỗi lần màn được bật.
-
-Gọi: `Leaderboard.GetTop(10)`.
+Sử dụng khi mở màn bảng xếp hạng.
 
 ```http
 GET /api/leaderboard?limit=10
 ```
 
-`200`:
+Thành công `200`:
 
 ```json
 {
@@ -154,34 +151,25 @@ GET /api/leaderboard?limit=10
 }
 ```
 
-Sắp điểm giảm dần. Nhiều người cùng điểm thì giữ thứ tự backend trả. Client vẽ tối đa 10 dòng. Hạng 1–3 dùng huy hiệu, từ hạng 4 hiện số.
+Quy ước dữ liệu:
 
-Bấm chơi lại không gọi API. Ván mới bắt đầu điểm 0 và chỉ nộp khi ván đó kết thúc.
+- `entries` được sắp xếp theo `score` giảm dần.
+- Khi nhiều người có cùng điểm, thứ tự trong response là thứ tự được giữ nguyên khi hiển thị.
+- Số lượng kết quả tối đa theo tham số `limit` là `10`.
 
-## 5. Tải lại dữ liệu
+## 5. Dữ liệu JSON mẫu
 
-Khi nào: debug F1, không phải luồng người chơi.
+| API                     | File dữ liệu       | Trường dữ liệu chính |
+| ----------------------- | ------------------ | -------------------- |
+| `POST /api/auth/login`  | `players.json`     | `players`            |
+| `GET /api/questions`    | `questions.json`   | `questions`          |
+| `POST /api/leaderboard` | `leaderboard.json` | `entries`            |
+| `GET /api/leaderboard`  | `leaderboard.json` | `entries`            |
 
-Gọi: `AppServices.ReloadFromPersistent()`.
+Tài khoản mẫu:
 
-Với HTTP, gọi lại đúng ba API ở trên và thay cache:
-
-1. `GET /api/questions`
-2. Không cần login lại nếu session còn.
-3. `GET /api/leaderboard?limit=10`
-
-## File JSON local tương ứng
-
-| API | File |
-| --- | --- |
-| `POST /api/auth/login` | `players.json` → `players[]` |
-| `GET /api/questions` | `questions.json` → `questions[]` |
-| `POST` và `GET /api/leaderboard` | `leaderboard.json` → `entries[]`, giữ 10 dòng |
-
-Tài khoản mẫu trong `players.json`: `chienbinh` / `123456`, tên hiển thị `CHIẾN BINH 01`.
-
-## Gắn HTTP sau này
-
-Giữ nguyên `IPlayerRepository`, `IQuestionRepository`, `ILeaderboardRepository`. Viết class HTTP mới và gán vào `AppServices` thay ba class `LocalJson*`. `LoginView`, `BossSequence`, `GameFlow`, `LeaderboardView` không đổi.
-
-Các method hiện đồng bộ. HTTP nên chạy request xong rồi trả kết quả đúng kiểu hiện tại: `bool` + `PlayerRecord`, `QuestionData[]`, `LeaderboardEntry[]`, `int rank`.
+| Trường        | Giá trị         |
+| ------------- | --------------- |
+| Tên đăng nhập | `chienbinh`     |
+| Mật khẩu      | `123456`        |
+| Tên hiển thị  | `CHIẾN BINH 01` |
