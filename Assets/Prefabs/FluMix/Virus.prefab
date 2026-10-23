@@ -198,9 +198,9 @@ MonoBehaviour:
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_ColorGlow: 0
   m_SamplingFilter: 0
-  m_SamplingIntensity: 0.5
-  m_SamplingWidth: 1
-  m_SamplingScale: 1
+  m_SamplingIntensity: 1
+  m_SamplingWidth: 7
+  m_SamplingScale: 5
   m_TransitionFilter: 0
   m_TransitionRate: 0.5
   m_TransitionReverse: 0
@@ -258,10 +258,10 @@ MonoBehaviour:
   m_SrcBlendMode: 1
   m_DstBlendMode: 10
   m_ShadowMode: 5
-  m_ShadowDistance: {x: 0.76, y: 0}
+  m_ShadowDistance: {x: 1, y: 0}
   m_ShadowIteration: 1
-  m_ShadowFade: 0.77
-  m_ShadowMirrorScale: 1.22
+  m_ShadowFade: 0.252
+  m_ShadowMirrorScale: 0.6
   m_ShadowBlurIntensity: 1
   m_ShadowColorFilter: 4
   m_ShadowColor: {r: 1, g: 1, b: 1, a: 1}

@@ -17,6 +17,14 @@ ShaderVariantCollection:
         passType: 0
       - keywords: COLOR_FILTER SAMPLING_BLUR_FAST UNITY_UI_CLIP_RECT
         passType: 0
+      - keywords: SAMPLING_BLUR_DETAIL
+        passType: 0
+      - keywords: SAMPLING_BLUR_FAST
+        passType: 0
+      - keywords: SAMPLING_BLUR_MEDIUM
+        passType: 0
+      - keywords: SAMPLING_PIXELATION
+        passType: 0
       - keywords: SAMPLING_PIXELATION TONE_RETRO
         passType: 0
       - keywords: SAMPLING_PIXELATION TONE_RETRO UNITY_UI_CLIP_RECT

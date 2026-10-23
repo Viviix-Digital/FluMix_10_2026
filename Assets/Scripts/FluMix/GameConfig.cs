@@ -91,7 +91,7 @@ namespace FluMix
         public float bossShakePixels = 5f;
         public float bossShakeSpeed = 18f;
         public float darkenAlpha = 0.6f;
-        public float winShieldDuration = 0.45f;
+        public float winShieldDuration = 2f;
         public float winShieldStartScale = 0.4f;
         public float winShieldPeakScale = 1.05f;
         public float winShieldSwayDegrees = 8f;

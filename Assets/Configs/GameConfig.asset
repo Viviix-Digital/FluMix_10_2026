@@ -65,7 +65,7 @@ MonoBehaviour:
   bossShakePixels: 5
   bossShakeSpeed: 18
   darkenAlpha: 0.6
-  winShieldDuration: 0.45
+  winShieldDuration: 2
   winShieldStartScale: 0.4
   winShieldPeakScale: 1.05
   winShieldSwayDegrees: 8

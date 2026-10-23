@@ -54,6 +54,10 @@ namespace FluMix
         [SerializeField] Sprite[] orangeFrames;
         [SerializeField] Sprite[] redFrames;
         [SerializeField] bool greenUsesSheet;
+        [Header("Virus flight smoke (chỉ lúc bay)")]
+        [SerializeField] GameObject smokeGreen;
+        [SerializeField] GameObject smokeOrange;
+        [SerializeField] GameObject smokeRed;
         [SerializeField] ArenaStage stage;
         [Header("Kéo aim")]
         [SerializeField] float pullFullDistance = 140f;
@@ -191,8 +195,9 @@ namespace FluMix
 
                 if (virus.airborne)
                 {
-                    virus.drop = Mathf.Min(1f, virus.drop + Time.deltaTime / 0.7f);
-                    PlaceVirus(virus, ProgressOf(virus));
+                    float dropSeconds = stage != null ? stage.DropDuration : 1.4f;
+                    virus.drop = Mathf.Min(1f, virus.drop + Time.deltaTime / dropSeconds);
+                    PlaceVirus(virus, 0f);
                     if (virus.drop >= 1f)
                         Land(virus);
                     continue;
@@ -615,13 +620,20 @@ namespace FluMix
             Sprite falling = DropSprite(type);
             bool airborne = falling != null;
             if (airborne)
+            {
                 view.Apply(type, falling, false);
-            int startCell = lane == 1 ? 3 : lane == 2 ? 1 : 0;
+                view.SetEntranceFlight(SmokePrefab(type));
+            }
+            else
+            {
+                view.SetEntranceLanded();
+            }
+
             var active = new ActiveVirus
             {
                 view = view,
                 lane = lane,
-                cell = startCell,
+                cell = 0,
                 slide = 1f,
                 drop = airborne ? 0f : 1f,
                 airborne = airborne
@@ -629,7 +641,7 @@ namespace FluMix
             view.Rect.localScale = Vector3.one;
             view.Pulse = !UsesSheet(type);
             alive.Add(active);
-            PlaceVirus(active, ProgressOf(active));
+            PlaceVirus(active, 0f);
             return true;
         }
 
@@ -740,10 +752,13 @@ namespace FluMix
                 return;
             virus.airborne = false;
             virus.drop = 1f;
+            virus.cell = 0;
+            virus.slide = 1f;
             VirusType type = virus.view.Type;
+            virus.view.SetEntranceLanded();
             virus.view.Apply(type, SpriteFor(type), UsesSheet(type));
             virus.view.Pulse = !UsesSheet(type);
-            PlaceVirus(virus, ProgressOf(virus));
+            PlaceVirus(virus, 0f);
         }
 
         Sprite SpriteFor(VirusType type)
@@ -763,6 +778,16 @@ namespace FluMix
                 case VirusType.Orange: return orangeDrop;
                 case VirusType.Red: return redDrop;
                 default: return greenDrop;
+            }
+        }
+
+        GameObject SmokePrefab(VirusType type)
+        {
+            switch (type)
+            {
+                case VirusType.Orange: return smokeOrange;
+                case VirusType.Red: return smokeRed;
+                default: return smokeGreen;
             }
         }
 

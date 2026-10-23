@@ -1,4 +1,5 @@
 using System;
+using Coffee.UIEffects;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -9,6 +10,9 @@ namespace FluMix
         [SerializeField] Image image;
         [SerializeField] Image flash;
         [SerializeField] SpriteSheetPlayer sheet;
+        [SerializeField] Vector3 flightSmokeLocal = new Vector3(0f, 90f, -1300f);
+        UIEffect uiEffect;
+        GameObject flightSmoke;
 
         public VirusType Type { get; private set; }
         public Image Image => image;
@@ -169,6 +173,74 @@ namespace FluMix
         {
             baseScale = scale;
             Rect.localScale = scale;
+        }
+
+        public void SetEntranceFlight(GameObject smokePrefab)
+        {
+            UIEffect effect = Effect();
+            if (effect != null)
+            {
+                effect.samplingFilter = SamplingFilter.BlurDetail;
+                // Intensity is clamped 0–1 by the package; push past default look via width/scale.
+                effect.samplingIntensity = 1f;
+                effect.samplingWidth = 7f;
+                effect.samplingScale = 5f;
+                effect.shadowMode = ShadowMode.None;
+            }
+
+            StartFlightSmoke(smokePrefab);
+        }
+
+        public void SetEntranceLanded()
+        {
+            StopFlightSmoke();
+            UIEffect effect = Effect();
+            if (effect == null)
+                return;
+            effect.samplingFilter = SamplingFilter.None;
+            effect.samplingIntensity = 0.5f;
+            effect.samplingWidth = 1f;
+            effect.samplingScale = 1f;
+            effect.shadowMode = ShadowMode.Mirror;
+            effect.shadowMirrorScale = 0.6f;
+            effect.shadowFade = 0.252f;
+            effect.shadowDistance = new Vector2(0.4f, 0f);
+        }
+
+        void StartFlightSmoke(GameObject prefab)
+        {
+            StopFlightSmoke();
+            if (prefab == null)
+                return;
+
+            flightSmoke = Instantiate(prefab, transform);
+            flightSmoke.name = prefab.name;
+            flightSmoke.transform.localPosition = flightSmokeLocal;
+            flightSmoke.transform.localRotation = Quaternion.identity;
+            flightSmoke.transform.localScale = Vector3.one;
+            ParticleSystem[] systems = flightSmoke.GetComponentsInChildren<ParticleSystem>(true);
+            for (int i = 0; i < systems.Length; i++)
+                systems[i].Play(true);
+        }
+
+        void StopFlightSmoke()
+        {
+            if (flightSmoke == null)
+                return;
+            Destroy(flightSmoke);
+            flightSmoke = null;
+        }
+
+        void OnDestroy()
+        {
+            StopFlightSmoke();
+        }
+
+        UIEffect Effect()
+        {
+            if (uiEffect == null)
+                uiEffect = GetComponent<UIEffect>();
+            return uiEffect;
         }
 
         void EnsureFlash()

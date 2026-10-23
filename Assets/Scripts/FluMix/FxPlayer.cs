@@ -577,8 +577,9 @@ namespace FluMix
 
         public IEnumerator PlayWinShield()
         {
-            if (winShield == null)
-                yield break;
+            // Keep the 2D WinShield Image off — win resolve uses EnergyShield VFX only.
+            if (winShield != null)
+                winShield.gameObject.SetActive(false);
 
             FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
             if (shots == null)
@@ -586,27 +587,11 @@ namespace FluMix
             if (shots != null)
                 shots.PlayWinOverUi();
 
-            winShield.gameObject.SetActive(true);
-            winShield.rectTransform.SetAsLastSibling();
-            float duration = config != null && config.winShieldDuration > 0.05f ? config.winShieldDuration : 0.45f;
-            float start = config != null ? config.winShieldStartScale : 0.4f;
-            float peak = config != null ? config.winShieldPeakScale : 1.05f;
-            float sway = config != null ? config.winShieldSwayDegrees : 8f;
-            float elapsed = 0f;
-            while (elapsed < duration)
-            {
-                elapsed += Time.deltaTime;
-                float u = Mathf.Clamp01(elapsed / duration);
-                float scale = u < 0.6f
-                    ? Mathf.Lerp(start, peak, u / 0.6f)
-                    : Mathf.Lerp(peak, 1f, (u - 0.6f) / 0.4f);
-                winShield.rectTransform.localScale = Vector3.one * scale;
-                winShield.rectTransform.localEulerAngles = new Vector3(0f, 0f, Mathf.Sin(u * Mathf.PI * 2f) * sway);
-                yield return null;
-            }
+            float duration = config != null && config.winShieldDuration > 0.05f ? config.winShieldDuration : 2f;
+            yield return new WaitForSeconds(duration);
 
-            winShield.rectTransform.localScale = Vector3.one;
-            winShield.rectTransform.localEulerAngles = Vector3.zero;
+            if (shots != null)
+                shots.HideWin();
         }
 
         public void HideWinShield()
