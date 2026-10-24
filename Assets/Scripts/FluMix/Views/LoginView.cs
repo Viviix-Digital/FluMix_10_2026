@@ -1,4 +1,5 @@
 using System.Collections;
+using FluMix.Api;
 using FluMix.Data;
 using TMPro;
 using UnityEngine;
@@ -8,21 +9,47 @@ namespace FluMix
 {
     public class LoginView : MonoBehaviour
     {
+        [Header("Roots (panel có sẵn trong scene)")]
+        [SerializeField] GameObject loginRoot;
+        [SerializeField] GameObject signUpRoot;
+
+        [Header("Shared")]
         [SerializeField] GameFlow flow;
         [SerializeField] AppServices services;
-        [SerializeField] TMP_InputField username;
-        [SerializeField] TMP_InputField password;
-        [SerializeField] Button startButton;
-        [SerializeField] Button eyeButton;
-        [SerializeField] Image eyeImage;
+
+        [Header("Login panel")]
+        [SerializeField] TMP_InputField loginUsername;
+        [SerializeField] TMP_InputField loginPassword;
+        [SerializeField] Button loginStartButton;
+        [SerializeField] Button loginEyeButton;
+        [SerializeField] Image loginEyeImage;
+        [SerializeField] Button goToSignUpButton;
+        [SerializeField] TMP_Text loginStatus;
+        [SerializeField] RectTransform loginShakeTarget;
+
+        [Header("SignUp panel")]
+        [SerializeField] TMP_InputField signUpUsername;
+        [SerializeField] TMP_InputField signUpPassword;
+        [SerializeField] TMP_InputField signUpPasswordAgain;
+        [SerializeField] Button signUpSubmitButton;
+        [SerializeField] Button signUpEyeButton;
+        [SerializeField] Image signUpEyeImage;
+        [SerializeField] Button goToLoginButton;
+        [SerializeField] TMP_Text signUpStatus;
+        [SerializeField] RectTransform signUpShakeTarget;
+
+        [Header("Eye sprites")]
         [SerializeField] Sprite eyeOpen;
         [SerializeField] Sprite eyeClosed;
-        [SerializeField] Button forgotButton;
-        [SerializeField] TMP_Text forgotMessage;
-        [SerializeField] RectTransform shakeTarget;
 
-        bool passwordHidden = true;
-        Vector2 shakeBase;
+        static readonly Color LinkWhite = new Color(1f, 1f, 1f, 0.92f);
+        static readonly Color StatusYellow = new Color(1f, 0.92f, 0.4f, 1f);
+
+        bool loginPasswordHidden = true;
+        bool signUpPasswordHidden = true;
+        bool busy;
+        Vector2 loginShakeBase;
+        Vector2 signUpShakeBase;
 
         public void Bind(
             GameFlow gameFlow,
@@ -40,55 +67,325 @@ namespace FluMix
         {
             flow = gameFlow;
             services = appServices;
-            username = userField;
-            password = passwordField;
-            startButton = start;
-            eyeButton = eye;
-            eyeImage = eyeIcon;
+            loginUsername = userField;
+            loginPassword = passwordField;
+            loginStartButton = start;
+            loginEyeButton = eye;
+            loginEyeImage = eyeIcon;
             eyeOpen = open;
             eyeClosed = closed;
-            forgotButton = forgot;
-            forgotMessage = message;
-            shakeTarget = panel;
+            // forgot = chữ nhỏ "đăng ký"
+            goToSignUpButton = forgot;
+            loginStatus = message;
+            loginShakeTarget = panel;
+            ResolvePanels();
             Wire();
         }
 
         void Awake()
         {
-            if (shakeTarget != null)
-                shakeBase = shakeTarget.anchoredPosition;
+            ResolvePanels();
+            if (loginShakeTarget != null)
+                loginShakeBase = loginShakeTarget.anchoredPosition;
+            if (signUpShakeTarget != null)
+                signUpShakeBase = signUpShakeTarget.anchoredPosition;
             Wire();
+        }
+
+        void OnEnable()
+        {
+            busy = false;
+        }
+
+        void ResolvePanels()
+        {
+            if (loginRoot == null)
+            {
+                var t = FindNamed("1. Home Login");
+                if (t != null)
+                    loginRoot = t.gameObject;
+            }
+
+            if (signUpRoot == null)
+            {
+                var t = FindNamed("1. Home SignUp");
+                if (t != null)
+                    signUpRoot = t.gameObject;
+            }
+
+            if (loginRoot != null)
+            {
+                if (loginUsername == null)
+                    loginUsername = FindInput(loginRoot.transform, "Login Panel/User Name");
+                if (loginPassword == null)
+                    loginPassword = FindInput(loginRoot.transform, "Login Panel/Password");
+                if (loginStartButton == null)
+                {
+                    var start = loginRoot.transform.Find("StartButton");
+                    if (start != null)
+                        loginStartButton = start.GetComponent<Button>();
+                }
+
+                if (loginEyeButton == null)
+                {
+                    var eye = loginRoot.transform.Find("Login Panel/Password/PreviewPassWord");
+                    if (eye != null)
+                    {
+                        loginEyeButton = eye.GetComponent<Button>();
+                        loginEyeImage = eye.GetComponent<Image>();
+                    }
+                }
+
+                // Ẩn nút SignupButton to (nếu còn) — dùng chữ nhỏ ForgotPassword
+                var bigSignUp = loginRoot.transform.Find("Login Panel/SignupButton");
+                if (bigSignUp != null)
+                    bigSignUp.gameObject.SetActive(false);
+
+                if (goToSignUpButton == null)
+                {
+                    var link = loginRoot.transform.Find("Login Panel/ForgotPassword");
+                    if (link != null)
+                        goToSignUpButton = link.GetComponent<Button>();
+                }
+
+                if (loginStatus == null)
+                {
+                    var msg = loginRoot.transform.Find("Login Panel/ForgotMessage");
+                    if (msg != null)
+                        loginStatus = msg.GetComponent<TMP_Text>();
+                }
+
+                if (loginShakeTarget == null)
+                {
+                    var panel = loginRoot.transform.Find("Login Panel");
+                    if (panel != null)
+                        loginShakeTarget = panel as RectTransform;
+                }
+            }
+
+            if (signUpRoot != null)
+            {
+                if (signUpUsername == null)
+                    signUpUsername = FindInput(signUpRoot.transform, "SignUp Panel/User Name");
+                if (signUpPassword == null)
+                    signUpPassword = FindInput(signUpRoot.transform, "SignUp Panel/Password");
+                if (signUpPasswordAgain == null)
+                    signUpPasswordAgain = FindInput(signUpRoot.transform, "SignUp Panel/Password Again");
+                if (signUpSubmitButton == null)
+                {
+                    var btn = signUpRoot.transform.Find("SignUp Panel/SignupButton (1)");
+                    if (btn == null)
+                        btn = signUpRoot.transform.Find("SignUp Panel/SignupButton");
+                    if (btn != null)
+                        signUpSubmitButton = btn.GetComponent<Button>();
+                }
+
+                if (signUpEyeButton == null)
+                {
+                    var eye = signUpRoot.transform.Find("SignUp Panel/Password/PreviewPassWord");
+                    if (eye != null)
+                    {
+                        signUpEyeButton = eye.GetComponent<Button>();
+                        signUpEyeImage = eye.GetComponent<Image>();
+                    }
+                }
+
+                // Link chữ nhỏ về Login: tạo từ ForgotMessage vị trí hoặc SignupButton phụ
+                if (goToLoginButton == null)
+                {
+                    var btn = signUpRoot.transform.Find("SignUp Panel/SignupButton");
+                    if (btn != null && (signUpSubmitButton == null || btn != signUpSubmitButton.transform))
+                        goToLoginButton = btn.GetComponent<Button>();
+                }
+
+                if (signUpStatus == null)
+                {
+                    var msg = signUpRoot.transform.Find("SignUp Panel/ForgotMessage");
+                    if (msg != null)
+                        signUpStatus = msg.GetComponent<TMP_Text>();
+                }
+
+                if (signUpShakeTarget == null)
+                {
+                    var panel = signUpRoot.transform.Find("SignUp Panel");
+                    if (panel != null)
+                        signUpShakeTarget = panel as RectTransform;
+                }
+            }
+        }
+
+        static Transform FindNamed(string name)
+        {
+            var all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] != null && all[i].name == name)
+                    return all[i];
+            }
+
+            return null;
+        }
+
+        static TMP_InputField FindInput(Transform root, string path)
+        {
+            Transform t = root.Find(path);
+            return t != null ? t.GetComponent<TMP_InputField>() : null;
+        }
+
+        void StyleAsWhiteLink(Button button, string label)
+        {
+            if (button == null)
+                return;
+
+            button.gameObject.SetActive(true);
+            var image = button.GetComponent<Image>();
+            if (image != null)
+            {
+                // Trong suốt — chỉ còn chữ
+                Color c = image.color;
+                c.a = 0f;
+                image.color = c;
+            }
+
+            TMP_Text text = button.GetComponentInChildren<TMP_Text>(true);
+            if (text != null)
+            {
+                text.text = label;
+                text.color = LinkWhite;
+                if (text.fontSize > 24f)
+                    text.fontSize = 22f;
+            }
         }
 
         void Wire()
         {
-            if (startButton != null)
+            if (loginStartButton != null)
             {
-                startButton.onClick.RemoveListener(Submit);
-                startButton.onClick.AddListener(Submit);
+                loginStartButton.onClick.RemoveListener(SubmitLogin);
+                loginStartButton.onClick.AddListener(SubmitLogin);
             }
 
-            if (eyeButton != null)
+            if (signUpSubmitButton != null)
             {
-                eyeButton.onClick.RemoveListener(TogglePassword);
-                eyeButton.onClick.AddListener(TogglePassword);
+                signUpSubmitButton.onClick.RemoveListener(SubmitRegister);
+                signUpSubmitButton.onClick.AddListener(SubmitRegister);
+                signUpSubmitButton.gameObject.SetActive(true);
             }
 
-            if (forgotButton != null)
+            StyleAsWhiteLink(goToSignUpButton, "Chưa có tài khoản? Đăng ký");
+            if (goToSignUpButton != null)
             {
-                forgotButton.onClick.RemoveListener(ShowForgot);
-                forgotButton.onClick.AddListener(ShowForgot);
+                goToSignUpButton.onClick.RemoveListener(OpenSignUp);
+                goToSignUpButton.onClick.AddListener(OpenSignUp);
             }
 
-            ApplyPasswordMode();
-            if (forgotMessage != null)
-                forgotMessage.gameObject.SetActive(false);
+            StyleAsWhiteLink(goToLoginButton, "Đã có tài khoản? Đăng nhập");
+            if (goToLoginButton != null)
+            {
+                goToLoginButton.onClick.RemoveListener(OpenLogin);
+                goToLoginButton.onClick.AddListener(OpenLogin);
+            }
+
+            if (loginEyeButton != null)
+            {
+                loginEyeButton.onClick.RemoveListener(ToggleLoginPassword);
+                loginEyeButton.onClick.AddListener(ToggleLoginPassword);
+            }
+
+            if (signUpEyeButton != null)
+            {
+                signUpEyeButton.onClick.RemoveListener(ToggleSignUpPassword);
+                signUpEyeButton.onClick.AddListener(ToggleSignUpPassword);
+            }
+
+            ApplyPasswordMode(loginPassword, loginEyeImage, loginPasswordHidden);
+            ApplyPasswordMode(signUpPassword, signUpEyeImage, signUpPasswordHidden);
+            if (signUpPasswordAgain != null)
+            {
+                signUpPasswordAgain.contentType = signUpPasswordHidden
+                    ? TMP_InputField.ContentType.Password
+                    : TMP_InputField.ContentType.Standard;
+                signUpPasswordAgain.ForceLabelUpdate();
+            }
+
+            if (loginStatus != null)
+            {
+                loginStatus.color = StatusYellow;
+                loginStatus.gameObject.SetActive(false);
+            }
+
+            if (signUpStatus != null)
+            {
+                signUpStatus.color = StatusYellow;
+                signUpStatus.gameObject.SetActive(false);
+            }
         }
 
-        public void Submit()
+        public void OpenSignUp()
         {
-            string user = username != null ? username.text : string.Empty;
-            string pass = password != null ? password.text : string.Empty;
+            FluMixSfx.Play("ui_page");
+            ShowStatus(null, true);
+            if (flow != null)
+                flow.SetScreen(FluMixScreen.Register);
+            else
+                ShowRoots(false);
+        }
+
+        public void OpenLogin()
+        {
+            FluMixSfx.Play("ui_page");
+            ShowStatus(null, false);
+            if (flow != null)
+                flow.SetScreen(FluMixScreen.Login);
+            else
+                ShowRoots(true);
+        }
+
+        void ShowRoots(bool login)
+        {
+            if (loginRoot != null)
+                loginRoot.SetActive(login);
+            if (signUpRoot != null)
+                signUpRoot.SetActive(!login);
+        }
+
+        public void ShowStatus(string message, bool onLogin)
+        {
+            TMP_Text target = onLogin ? loginStatus : signUpStatus;
+            if (target == null)
+                target = loginStatus != null ? loginStatus : signUpStatus;
+            if (target == null)
+                return;
+
+            bool show = !string.IsNullOrEmpty(message);
+            target.gameObject.SetActive(show);
+            if (show)
+            {
+                target.color = StatusYellow;
+                target.text = message;
+            }
+        }
+
+        public void SubmitLogin()
+        {
+            if (busy)
+                return;
+
+            string user = loginUsername != null ? loginUsername.text : string.Empty;
+            string pass = loginPassword != null ? loginPassword.text : string.Empty;
+
+            if (services != null && services.UseOnlineApi && services.Api != null)
+            {
+                if (string.IsNullOrEmpty(pass))
+                {
+                    FailLocal("Mật khẩu không được để trống. Vui lòng thử lại.", true);
+                    return;
+                }
+
+                StartCoroutine(SubmitOnline(false, user, pass, null));
+                return;
+            }
+
             if (services != null && services.Players.TryLogin(user, pass, out PlayerRecord player))
             {
                 FluMixSfx.Play("ui_confirm");
@@ -96,42 +393,180 @@ namespace FluMix
                 return;
             }
 
-            FluMixSfx.Play("ui_deny");
-            StartCoroutine(Shake());
+            FailLocal("Sai tên đăng nhập hoặc mật khẩu. Vui lòng thử lại.", true);
         }
 
-        public void TogglePassword()
+        public void SubmitRegister()
         {
-            passwordHidden = !passwordHidden;
-            FluMixSfx.Play("input_password");
-            ApplyPasswordMode();
-        }
-
-        public void ShowForgot()
-        {
-            if (forgotMessage == null)
+            if (busy)
                 return;
-            forgotMessage.gameObject.SetActive(true);
-            forgotMessage.text = "Mật khẩu lưu trên máy này";
-        }
 
-        void ApplyPasswordMode()
-        {
-            if (password != null)
+            string user = signUpUsername != null ? signUpUsername.text : string.Empty;
+            string pass = signUpPassword != null ? signUpPassword.text : string.Empty;
+            string pass2 = signUpPasswordAgain != null ? signUpPasswordAgain.text : string.Empty;
+
+            if (!FluMistApi.ValidUsername(user))
             {
-                password.contentType = passwordHidden
-                    ? TMP_InputField.ContentType.Password
-                    : TMP_InputField.ContentType.Standard;
-                password.ForceLabelUpdate();
+                FailLocal("Username 3–64 ký tự: chữ không dấu, số, . _ - @ +. Vui lòng thử lại.", false);
+                return;
             }
 
-            if (eyeImage != null)
-                eyeImage.sprite = passwordHidden ? eyeClosed : eyeOpen;
+            if (!FluMistApi.ValidPassword(pass))
+            {
+                FailLocal("Mật khẩu từ 6 đến 128 ký tự. Vui lòng thử lại.", false);
+                return;
+            }
+
+            if (pass != pass2)
+            {
+                FailLocal("Mật khẩu nhập lại không khớp. Vui lòng thử lại.", false);
+                return;
+            }
+
+            string fullName = FluMistApi.NormUser(user);
+            StartCoroutine(SubmitOnline(true, user, pass, fullName));
         }
 
-        IEnumerator Shake()
+        IEnumerator SubmitOnline(bool register, string user, string pass, string fullName)
         {
-            if (shakeTarget == null)
+            busy = true;
+            SetBusyButtons(false);
+            ShowStatus(register ? "Đang đăng ký…" : "Đang đăng nhập…", !register);
+
+            AuthDto auth = null;
+            long http = 0;
+            string message = null;
+
+            if (register)
+            {
+                yield return services.Api.Register(user, pass, fullName,
+                    a => auth = a,
+                    (h, c, m) => { http = h; message = m; });
+            }
+            else
+            {
+                yield return services.Api.Login(user, pass,
+                    a => auth = a,
+                    (h, c, m) => { http = h; message = m; });
+            }
+
+            if (auth == null || auth.player == null)
+            {
+                busy = false;
+                SetBusyButtons(true);
+                FailLocal(FormatAuthError(register, http, message), !register);
+                yield break;
+            }
+
+            // Register xong = đã login (token trong response) → tải câu hỏi rồi vào game
+            ShowStatus("Đang tải câu hỏi…", !register);
+            QuestionsDto questions = null;
+            yield return services.Api.Questions(
+                q => questions = q,
+                (h, c, m) => { http = h; message = m; });
+
+            if (questions == null || questions.questions == null || questions.questions.Length == 0)
+            {
+                busy = false;
+                SetBusyButtons(true);
+                FailLocal((message ?? "Không tải được câu hỏi") + " Vui lòng thử lại sau.", !register);
+                yield break;
+            }
+
+            services.SetCachedQuestions(questions);
+            var player = new PlayerRecord
+            {
+                username = auth.player.username,
+                displayName = string.IsNullOrEmpty(auth.player.fullName) ? auth.player.username : auth.player.fullName,
+                uuid = auth.player.uuid
+            };
+
+            busy = false;
+            SetBusyButtons(true);
+            FluMixSfx.Play("ui_confirm");
+            ShowStatus(null, !register);
+            flow.OnLoggedIn(player);
+        }
+
+        static string FormatAuthError(bool register, long http, string message)
+        {
+            if (http == 0)
+                return "Mất kết nối server. Vui lòng thử lại sau.";
+            if (http == 409)
+                return "Tên đăng nhập đã có người dùng. Vui lòng thử lại.";
+            if (http == 401)
+                return (message ?? "Sai tên đăng nhập hoặc mật khẩu") + " Vui lòng thử lại.";
+            if (http == 403)
+                return (message ?? "Không thể đăng ký") + " Vui lòng thử lại sau.";
+            if (http >= 500)
+                return "Server đang lỗi. Vui lòng thử lại sau.";
+            if (!string.IsNullOrEmpty(message))
+                return message + (message.EndsWith(".") ? " " : ". ") + "Vui lòng thử lại.";
+            return register
+                ? "Đăng ký thất bại. Vui lòng thử lại sau."
+                : "Đăng nhập thất bại. Vui lòng thử lại sau.";
+        }
+
+        void SetBusyButtons(bool interactable)
+        {
+            if (loginStartButton != null)
+                loginStartButton.interactable = interactable;
+            if (signUpSubmitButton != null)
+                signUpSubmitButton.interactable = interactable;
+            if (goToSignUpButton != null)
+                goToSignUpButton.interactable = interactable;
+            if (goToLoginButton != null)
+                goToLoginButton.interactable = interactable;
+        }
+
+        public void ToggleLoginPassword()
+        {
+            loginPasswordHidden = !loginPasswordHidden;
+            FluMixSfx.Play("input_password");
+            ApplyPasswordMode(loginPassword, loginEyeImage, loginPasswordHidden);
+        }
+
+        public void ToggleSignUpPassword()
+        {
+            signUpPasswordHidden = !signUpPasswordHidden;
+            FluMixSfx.Play("input_password");
+            ApplyPasswordMode(signUpPassword, signUpEyeImage, signUpPasswordHidden);
+            if (signUpPasswordAgain != null)
+            {
+                signUpPasswordAgain.contentType = signUpPasswordHidden
+                    ? TMP_InputField.ContentType.Password
+                    : TMP_InputField.ContentType.Standard;
+                signUpPasswordAgain.ForceLabelUpdate();
+            }
+        }
+
+        void ApplyPasswordMode(TMP_InputField field, Image eyeImage, bool hidden)
+        {
+            if (field != null)
+            {
+                field.contentType = hidden
+                    ? TMP_InputField.ContentType.Password
+                    : TMP_InputField.ContentType.Standard;
+                field.ForceLabelUpdate();
+            }
+
+            if (eyeImage != null && eyeClosed != null && eyeOpen != null)
+                eyeImage.sprite = hidden ? eyeClosed : eyeOpen;
+        }
+
+        void FailLocal(string message, bool onLogin)
+        {
+            FluMixSfx.Play("ui_deny");
+            if (!string.IsNullOrEmpty(message))
+                ShowStatus(message, onLogin);
+            StartCoroutine(Shake(onLogin));
+        }
+
+        IEnumerator Shake(bool onLogin)
+        {
+            RectTransform target = onLogin ? loginShakeTarget : signUpShakeTarget;
+            Vector2 bas = onLogin ? loginShakeBase : signUpShakeBase;
+            if (target == null)
                 yield break;
 
             float elapsed = 0f;
@@ -141,11 +576,11 @@ namespace FluMix
                 elapsed += Time.deltaTime;
                 float fade = 1f - Mathf.Clamp01(elapsed / duration);
                 float offset = Mathf.Sin(elapsed * 48f) * 14f * fade;
-                shakeTarget.anchoredPosition = shakeBase + new Vector2(offset, 0f);
+                target.anchoredPosition = bas + new Vector2(offset, 0f);
                 yield return null;
             }
 
-            shakeTarget.anchoredPosition = shakeBase;
+            target.anchoredPosition = bas;
         }
     }
 }

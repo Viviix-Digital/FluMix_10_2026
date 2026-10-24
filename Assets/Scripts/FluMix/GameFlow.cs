@@ -1,3 +1,5 @@
+using System.Collections;
+using FluMix.Api;
 using FluMix.Data;
 using TMPro;
 using UnityEngine;
@@ -31,14 +33,19 @@ namespace FluMix
         float remaining;
         float elapsed;
         float explainDefault;
+        float mePollTimer;
         bool timerPaused;
         bool timerLocked;
         bool roundActive;
         bool submitted;
+        bool startingRound;
+        bool endingRound;
         int lastRank;
+        int lastTotalScore;
         int questionsAnswered;
         int questionsCorrect;
         int lastTickSecond = -1;
+        string statusBanner;
 
         public GameConfig Config => config;
         public FluMixScreen Screen { get; private set; }
@@ -46,6 +53,7 @@ namespace FluMix
         public int QuestionsCorrect => questionsCorrect;
         public bool IsRoundOver => config != null && (questionsAnswered >= config.maxQuestions || remaining <= 0f);
         public string PlayerName => player != null ? player.displayName : "CHIẾN BINH 01";
+        public int LastTotalScore => lastTotalScore;
 
         void Awake()
         {
@@ -82,8 +90,72 @@ namespace FluMix
                 winButton.onClick.AddListener(OnWinBannerPressed);
             }
 
-            SetScreen(FluMixScreen.Login);
+            if (services != null && services.Api != null)
+                services.Api.LoggedOut += OnApiLoggedOut;
+
+            if (battle != null && services != null)
+                battle.BindRoundSession(services.UseOnlineApi ? services.RoundSession : null);
+
             RefreshHud();
+            StartCoroutine(BootAuth());
+        }
+
+        IEnumerator BootAuth()
+        {
+            SetScreen(FluMixScreen.Login);
+
+            if (services == null || !services.UseOnlineApi || services.Api == null)
+                yield break;
+
+            if (!TokenStore.HasSession && !services.Api.IsAuthenticated)
+                yield break;
+
+            var loginView = FindFirstObjectByType<LoginView>(FindObjectsInactive.Include);
+            if (loginView != null)
+                loginView.ShowStatus("Đang đăng nhập…", true);
+
+            MeDto me = null;
+            string needLogin = null;
+            yield return services.Api.TryRestoreSession(
+                m => me = m,
+                reason => needLogin = reason);
+
+            if (me == null || me.player == null)
+            {
+                if (loginView != null)
+                    loginView.ShowStatus(
+                        string.IsNullOrEmpty(needLogin)
+                            ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+                            : needLogin,
+                        true);
+                yield break;
+            }
+
+            if (loginView != null)
+                loginView.ShowStatus("Đang tải câu hỏi…", true);
+
+            QuestionsDto questions = null;
+            string qErr = null;
+            yield return services.Api.Questions(
+                q => questions = q,
+                (h, c, m) => qErr = m);
+
+            if (questions == null || questions.questions == null || questions.questions.Length == 0)
+            {
+                if (loginView != null)
+                    loginView.ShowStatus(
+                        (qErr ?? "Không tải được câu hỏi") + " Vui lòng thử lại sau.",
+                        true);
+                yield break;
+            }
+
+            services.SetCachedQuestions(questions);
+            OnLoggedIn(new PlayerRecord
+            {
+                username = me.player.username,
+                displayName = string.IsNullOrEmpty(me.player.fullName) ? me.player.username : me.player.fullName,
+                uuid = me.player.uuid
+            });
         }
 
         public void OnWinBannerPressed()
@@ -96,10 +168,35 @@ namespace FluMix
         {
             if (score != null)
                 score.ScoreChanged -= OnScoreChanged;
+            if (services != null && services.Api != null)
+                services.Api.LoggedOut -= OnApiLoggedOut;
+        }
+
+        void OnApiLoggedOut(string reason)
+        {
+            StopAllCoroutines();
+            startingRound = false;
+            endingRound = false;
+            roundActive = false;
+            if (boss != null)
+                boss.Abort();
+            if (battle != null)
+                battle.StopRound();
+            if (services != null && services.RoundSession != null)
+                services.RoundSession.ResetLocal();
+            player = null;
+            statusBanner = reason;
+            Debug.LogWarning("[FluMist] LoggedOut: " + reason);
+            SetScreen(FluMixScreen.Login);
+            var loginView = FindFirstObjectByType<LoginView>(FindObjectsInactive.Include);
+            if (loginView != null && !string.IsNullOrEmpty(reason))
+                loginView.ShowStatus(reason, true);
         }
 
         void Update()
         {
+            PollSession();
+
             if (!roundActive || config == null)
                 return;
 
@@ -140,20 +237,51 @@ namespace FluMix
                 StartBoss(false);
         }
 
+        void PollSession()
+        {
+            if (services == null || !services.UseOnlineApi || services.Api == null || !services.Api.IsAuthenticated)
+                return;
+            if (Screen != FluMixScreen.Rules && Screen != FluMixScreen.Leaderboard && Screen != FluMixScreen.Result)
+                return;
+
+            mePollTimer += Time.unscaledDeltaTime;
+            if (mePollTimer < 45f)
+                return;
+            mePollTimer = 0f;
+            StartCoroutine(PollMe());
+        }
+
+        IEnumerator PollMe()
+        {
+            yield return services.Api.Me(_ => { }, (h, c, m) =>
+            {
+                if (h == 401)
+                    Debug.LogWarning("[FluMist] /me failed: " + m);
+            });
+        }
+
         public void OnLoggedIn(PlayerRecord record)
         {
             player = record;
+            mePollTimer = 0f;
+            statusBanner = null;
             SetScreen(FluMixScreen.Rules);
         }
 
         public void StartRound()
         {
+            if (startingRound || endingRound)
+                return;
+            StartCoroutine(StartRoundRoutine());
+        }
+
+        IEnumerator StartRoundRoutine()
+        {
+            startingRound = true;
             if (boss != null)
                 boss.Abort();
             if (fx != null)
                 fx.HideImmediate();
-            if (score != null)
-                score.ResetScore();
             if (questions != null)
                 questions.ResetOrder();
 
@@ -163,13 +291,59 @@ namespace FluMix
             elapsed = 0f;
             timerPaused = false;
             timerLocked = false;
-            roundActive = true;
             submitted = false;
             lastRank = 0;
+            lastTotalScore = 0;
+
+            bool online = services != null && services.UseOnlineApi && services.Api != null;
+            if (online)
+            {
+                if (services.CachedQuestions == null || services.CachedQuestions.Length == 0)
+                {
+                    QuestionsDto dto = null;
+                    string err = null;
+                    yield return services.Api.Questions(q => dto = q, (h, c, m) => err = m);
+                    if (dto == null)
+                    {
+                        startingRound = false;
+                        statusBanner = err ?? "Không tải được câu hỏi";
+                        Debug.LogError("[FluMist] " + statusBanner);
+                        SetScreen(FluMixScreen.Rules);
+                        yield break;
+                    }
+
+                    services.SetCachedQuestions(dto);
+                }
+
+                services.RoundSession.ResetLocal();
+                string startErr = null;
+                yield return services.RoundSession.Begin(e => startErr = e);
+                if (!services.RoundSession.HasPlay)
+                {
+                    startingRound = false;
+                    statusBanner = startErr ?? "Không bắt đầu được ván";
+                    Debug.LogError("[FluMist] " + statusBanner);
+                    SetScreen(FluMixScreen.Rules);
+                    yield break;
+                }
+
+                if (score != null)
+                    score.SetScore(services.RoundSession.HudScore);
+            }
+            else if (score != null)
+            {
+                score.ResetScore();
+            }
+
+            if (battle != null)
+                battle.BindRoundSession(online ? services.RoundSession : null);
+
+            roundActive = true;
             SetScreen(FluMixScreen.Battle);
             if (battle != null)
                 battle.BeginRound();
             RefreshHud();
+            startingRound = false;
         }
 
         public void PlayAgain()
@@ -193,6 +367,23 @@ namespace FluMix
 
         public void EndRound()
         {
+            if (endingRound || submitted)
+            {
+                if (submitted && resultView != null)
+                {
+                    resultView.Show(score != null ? score.Score : 0, elapsed, questionsCorrect, questionsAnswered, lastRank);
+                    SetScreen(FluMixScreen.Result);
+                }
+
+                return;
+            }
+
+            StartCoroutine(EndRoundRoutine());
+        }
+
+        IEnumerator EndRoundRoutine()
+        {
+            endingRound = true;
             if (boss != null && boss.IsRunning)
                 boss.Abort();
             if (battle != null)
@@ -202,11 +393,55 @@ namespace FluMix
 
             roundActive = false;
             timerPaused = true;
-            if (!submitted && services != null)
+
+            bool online = services != null && services.UseOnlineApi && services.RoundSession != null && services.RoundSession.HasPlay;
+            if (online)
+            {
+                ProgressResultDto finish = null;
+                yield return services.RoundSession.Finish(r => finish = r);
+
+                if (finish == null && services.RoundSession.HasPendingProgress)
+                {
+                    // retry once
+                    yield return services.RoundSession.RetryPending(r => finish = r);
+                    if (finish == null || !finish.completed)
+                        yield return services.RoundSession.Finish(r => finish = r);
+                }
+
+                if (finish != null)
+                {
+                    if (finish.play != null && score != null)
+                        score.SetScore(finish.play.score);
+                    lastTotalScore = finish.totalScore;
+                    if (finish.leaderboard != null && finish.leaderboard.me != null)
+                        lastRank = finish.leaderboard.me.rank;
+                    else
+                    {
+                        LeaderboardDto board = null;
+                        yield return services.Api.Leaderboard(10, b => board = b, (h, c, m) => { });
+                        if (board != null && board.me != null)
+                            lastRank = board.me.rank;
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[FluMist] Finish failed: " + services.RoundSession.LastError);
+                    LeaderboardDto board = null;
+                    yield return services.Api.Leaderboard(10, b => board = b, (h, c, m) => { });
+                    if (board != null && board.me != null)
+                    {
+                        lastRank = board.me.rank;
+                        lastTotalScore = board.me.totalScore;
+                    }
+                }
+            }
+            else if (services != null)
             {
                 lastRank = services.Leaderboard.Submit(PlayerName, score != null ? score.Score : 0);
-                submitted = true;
             }
+
+            submitted = true;
+            endingRound = false;
 
             if (resultView != null)
                 resultView.Show(score != null ? score.Score : 0, elapsed, questionsCorrect, questionsAnswered, lastRank);
@@ -289,18 +524,26 @@ namespace FluMix
             if (delta <= 0 && config != null && config.bossScoreMilestones != null && config.bossScoreMilestones.Length > 0)
                 delta = config.bossScoreMilestones[0];
             score.Add(delta);
+            if (services != null && services.UseOnlineApi && services.RoundSession != null)
+                services.RoundSession.OnVirusDelta(delta);
         }
 
         public void DebugAddScore(int delta)
         {
             if (score != null)
                 score.Add(delta);
+            if (services != null && services.UseOnlineApi && services.RoundSession != null)
+                services.RoundSession.OnVirusDelta(delta);
         }
 
         public void DebugSetScore(int value)
         {
-            if (score != null)
-                score.SetScore(value);
+            if (score == null)
+                return;
+            int delta = value - score.Score;
+            score.SetScore(value);
+            if (services != null && services.UseOnlineApi && services.RoundSession != null)
+                services.RoundSession.OnVirusDelta(delta);
         }
 
         public void DebugResetScore()
@@ -381,7 +624,7 @@ namespace FluMix
                 return;
             }
 
-            if (screen == FluMixScreen.Rules || screen == FluMixScreen.Login)
+            if (screen == FluMixScreen.Rules || screen == FluMixScreen.Login || screen == FluMixScreen.Register)
             {
                 if (boss != null)
                     boss.Abort();

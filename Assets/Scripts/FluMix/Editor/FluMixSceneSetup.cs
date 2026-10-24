@@ -57,6 +57,7 @@ namespace FluMix.EditorTools
 
             Transform root = canvas.transform;
             var loginRoot = Find(root, "1. Home Login");
+            var signUpRoot = Find(root, "1. Home SignUp");
             var rulesRoot = Find(root, "2. Rules");
             var gameplay = Find(root, "3. GamePlay");
             var resultRoot = Find(root, "4. Result");
@@ -70,10 +71,41 @@ namespace FluMix.EditorTools
             var eyeImage = eye.GetComponent<Image>();
             Sprite eyeOpen = eyeImage.sprite;
             Sprite eyeClosed = LoadSprite("Assets/Design/Elements/HiddenEyeIcon.png");
-            var forgot = EnsureButton(Find(loginRoot, "Login Panel"), "ForgotPassword", "Quên mật khẩu?", font, new Vector2(250f, -78f), new Vector2(280f, 36f));
-            var forgotMessage = EnsureLabel(Find(loginRoot, "Login Panel"), "ForgotMessage", "Mật khẩu lưu trên máy này", font, new Vector2(0f, -130f), new Vector2(640f, 40f));
-            forgotMessage.gameObject.SetActive(false);
-            forgotMessage.color = new Color(1f, 0.92f, 0.4f);
+            // ForgotPassword → link chữ nhỏ "Chưa có tài khoản? Đăng ký" (không còn quên mật khẩu)
+            var forgot = Find(loginRoot, "Login Panel/ForgotPassword");
+            if (forgot != null)
+            {
+                forgot.gameObject.SetActive(true);
+                var forgotLabel = forgot.GetComponentInChildren<TMP_Text>(true);
+                if (forgotLabel != null)
+                {
+                    forgotLabel.text = "Chưa có tài khoản? Đăng ký";
+                    forgotLabel.color = new Color(1f, 1f, 1f, 0.92f);
+                }
+
+                var forgotImg = forgot.GetComponent<Image>();
+                if (forgotImg != null)
+                {
+                    Color c = forgotImg.color;
+                    c.a = 0f;
+                    forgotImg.color = c;
+                }
+            }
+
+            var bigSignUp = Find(loginRoot, "Login Panel/SignupButton");
+            if (bigSignUp != null)
+                bigSignUp.gameObject.SetActive(false);
+
+            var forgotMessage = Find(loginRoot, "Login Panel/ForgotMessage");
+            TMP_Text forgotMessageText = forgotMessage != null ? forgotMessage.GetComponent<TMP_Text>() : null;
+            if (forgotMessageText != null)
+            {
+                forgotMessageText.gameObject.SetActive(false);
+                forgotMessageText.color = new Color(1f, 0.92f, 0.4f);
+            }
+
+            if (signUpRoot != null)
+                signUpRoot.gameObject.SetActive(false);
 
             var spawn = EnsureAnchor(arena, "SpawnPoint", new Vector2(860f, -30f));
             var wall = EnsureAnchor(arena, "WallPoint", new Vector2(-210f, -30f));
@@ -233,7 +265,22 @@ namespace FluMix.EditorTools
             AssignSpriteCookSheets(heroes, virusPrefab, bossSheet, effects);
 
             sequence.Bind(config, flow, score, battle, presenter, effects, services);
-            login.Bind(flow, services, userField, passField, Find(loginRoot, "StartButton").GetComponent<Button>(), eye.GetComponent<Button>(), eyeImage, eyeOpen != null ? eyeOpen : eyeClosed, eyeClosed, forgot, forgotMessage, Find(loginRoot, "Login Panel").GetComponent<RectTransform>());
+            Button forgotBtn = forgot != null ? forgot.GetComponent<Button>() : null;
+            login.Bind(
+                flow,
+                services,
+                userField,
+                passField,
+                Find(loginRoot, "StartButton").GetComponent<Button>(),
+                eye.GetComponent<Button>(),
+                eyeImage,
+                eyeOpen != null ? eyeOpen : eyeClosed,
+                eyeClosed,
+                forgotBtn,
+                forgotMessageText,
+                Find(loginRoot, "Login Panel").GetComponent<RectTransform>());
+            if (signUpRoot != null)
+                router.BindSignUp(signUpRoot.gameObject);
             rules.Bind(flow, Find(rulesRoot, "Next Button").GetComponent<Button>());
             result.Bind(
                 flow,

@@ -8,6 +8,7 @@ namespace FluMix
     {
         Boot,
         Login,
+        Register,
         Rules,
         Battle,
         Warning,
@@ -21,6 +22,7 @@ namespace FluMix
     public class ScreenRouter : MonoBehaviour
     {
         [SerializeField] GameObject login;
+        [SerializeField] GameObject signUp;
         [SerializeField] GameObject rules;
         [SerializeField] GameObject gameplay;
         [SerializeField] GameObject result;
@@ -37,6 +39,23 @@ namespace FluMix
             gameplay = gameplayRoot;
             result = resultRoot;
             leaderboard = leaderboardRoot;
+            if (signUp == null)
+            {
+                var all = Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                for (int i = 0; i < all.Length; i++)
+                {
+                    if (all[i] != null && all[i].name == "1. Home SignUp")
+                    {
+                        signUp = all[i].gameObject;
+                        break;
+                    }
+                }
+            }
+        }
+
+        public void BindSignUp(GameObject signUpRoot)
+        {
+            signUp = signUpRoot;
         }
 
         public void Show(FluMixScreen screen)
@@ -48,6 +67,7 @@ namespace FluMix
                 || screen == FluMixScreen.BossResolve;
 
             Crossfade(login, screen == FluMixScreen.Login);
+            Crossfade(signUp, screen == FluMixScreen.Register);
             Crossfade(rules, screen == FluMixScreen.Rules);
             Crossfade(gameplay, battle);
             Crossfade(result, screen == FluMixScreen.Result);

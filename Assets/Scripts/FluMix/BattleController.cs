@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using FluMix.Api;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -76,6 +77,12 @@ namespace FluMix
         bool paused;
         bool inputLocked;
         VirusType? pendingSpawn;
+        FluMistRoundSession roundSession;
+
+        public void BindRoundSession(FluMistRoundSession session)
+        {
+            roundSession = session;
+        }
 
         public bool IsPaused => paused;
         public bool IsBusy => inputLocked;
@@ -537,6 +544,8 @@ namespace FluMix
             Vector2 to = virus.view.Rect.anchoredPosition;
             int delta = correct ? config.correctHeroScore : config.wrongHeroScore;
             score.Add(delta);
+            if (roundSession != null)
+                roundSession.OnVirusDelta(delta);
             FluMixSfx.Play(correct ? "impact_correct" : "impact_wrong");
             if (fx != null)
                 fx.PlayScorePopup(delta, to);
@@ -579,6 +588,8 @@ namespace FluMix
             virus.dying = true;
             FluMixSfx.Play("virus_leak");
             score.Add(config.virusReachScore);
+            if (roundSession != null)
+                roundSession.OnVirusDelta(config.virusReachScore);
             fx.PlayScorePopup(config.virusReachScore, virus.view.Rect.anchoredPosition);
             virus.view.Pulse = false;
             yield return fx.PlayVirusDeath(virus.view.Rect);

@@ -1,4 +1,5 @@
 using System;
+using FluMix.Api;
 
 namespace FluMix.Data
 {
@@ -6,11 +7,15 @@ namespace FluMix.Data
     public class QuestionData
     {
         public string id;
+        public string codeId;
         public string prompt;
         public string[] options;
+        public string[] optionKeys;
         public int correctIndex;
         public string explanation;
         public string reference;
+        public int points;
+        [NonSerialized] public QuestionDto source;
     }
 
     [Serializable]
@@ -25,6 +30,7 @@ namespace FluMix.Data
         public string username;
         public string password;
         public string displayName;
+        public string uuid;
     }
 
     [Serializable]
@@ -38,6 +44,8 @@ namespace FluMix.Data
     {
         public string name;
         public int score;
+        public int rank;
+        public bool isMe;
     }
 
     [Serializable]

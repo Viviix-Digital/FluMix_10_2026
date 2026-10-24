@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using FluMix.Api;
 using FluMix.Data;
 using TMPro;
 using UnityEngine;
@@ -26,6 +27,9 @@ namespace FluMix
         bool locked;
         bool descriptionDismissed;
         Action<int> picked;
+        QuestionData current;
+
+        public QuestionData Current => current;
 
         public void Bind(
             GameConfig gameConfig,
@@ -80,11 +84,48 @@ namespace FluMix
                 return null;
             QuestionData question = questions[cursor % questions.Length];
             cursor++;
-            return question;
+            return CloneForDisplay(question);
+        }
+
+        static QuestionData CloneForDisplay(QuestionData source)
+        {
+            if (source == null)
+                return null;
+
+            var copy = new QuestionData
+            {
+                id = source.id,
+                codeId = source.codeId,
+                prompt = source.prompt,
+                correctIndex = source.correctIndex,
+                explanation = source.explanation,
+                reference = source.reference,
+                points = source.points,
+                source = source.source
+            };
+
+            if (source.options != null)
+            {
+                copy.options = (string[])source.options.Clone();
+                if (source.optionKeys != null && source.optionKeys.Length == source.options.Length)
+                    copy.optionKeys = (string[])source.optionKeys.Clone();
+                else if (source.correctIndex >= 0)
+                {
+                    // Offline local JSON: synthesize keys A/B/C…
+                    copy.optionKeys = new string[source.options.Length];
+                    for (int i = 0; i < source.options.Length; i++)
+                        copy.optionKeys[i] = ((char)('A' + i)).ToString();
+                }
+            }
+
+            if (copy.optionKeys != null && copy.correctIndex < 0)
+                QuestionMapper.ShuffleOptions(copy);
+            return copy;
         }
 
         public void Show(QuestionData question, int number, Action<int> onPicked)
         {
+            current = question;
             picked = onPicked;
             locked = false;
             if (title != null)
@@ -108,7 +149,19 @@ namespace FluMix
             {
                 bool visible = i < count;
                 if (optionLabels[i] != null)
-                    optionLabels[i].text = visible ? question.options[i] : string.Empty;
+                {
+                    if (visible)
+                    {
+                        string key = QuestionMapper.KeyAt(question, i);
+                        string label = question.options[i];
+                        optionLabels[i].text = string.IsNullOrEmpty(key) ? label : key + ". " + label;
+                    }
+                    else
+                    {
+                        optionLabels[i].text = string.Empty;
+                    }
+                }
+
                 if (optionButtons != null && i < optionButtons.Length && optionButtons[i] != null)
                 {
                     optionButtons[i].gameObject.SetActive(visible);
@@ -135,13 +188,20 @@ namespace FluMix
             picked?.Invoke(index);
         }
 
-        public IEnumerator Reveal(QuestionData question, int pickedIndex)
+        public string KeyForIndex(int index) => QuestionMapper.KeyAt(current, index);
+
+        public IEnumerator Reveal(QuestionData question, int pickedIndex, string correctKey = null)
         {
             if (question == null)
                 yield break;
 
-            Place(rightHighlight, question.correctIndex);
-            if (pickedIndex >= 0 && pickedIndex != question.correctIndex)
+            int correctIndex = !string.IsNullOrEmpty(correctKey)
+                ? QuestionMapper.IndexOfKey(question, correctKey)
+                : question.correctIndex;
+
+            if (correctIndex >= 0)
+                Place(rightHighlight, correctIndex);
+            if (pickedIndex >= 0 && pickedIndex != correctIndex)
                 Place(wrongHighlight, pickedIndex);
             else
                 Hide(wrongHighlight);
@@ -149,12 +209,12 @@ namespace FluMix
             if (explanation != null)
                 explanation.gameObject.SetActive(false);
 
-            if (pickedIndex >= 0 && pickedIndex != question.correctIndex)
+            if (pickedIndex >= 0 && pickedIndex != correctIndex)
                 FluMixSfx.Play("quiz_wrong");
             yield break;
         }
 
-        public IEnumerator ShowAnswerDescription(QuestionData question, int pickedIndex)
+        public IEnumerator ShowAnswerDescription(QuestionData question, int pickedIndex, string correctKey = null, bool? serverCorrect = null)
         {
             if (question == null || config != null && config.explainHoldSeconds <= config.explainDisabledSeconds)
                 yield break;
@@ -167,12 +227,16 @@ namespace FluMix
             if (answerDescription == null)
                 yield break;
 
-            bool correct = pickedIndex == question.correctIndex;
+            int correctIndex = !string.IsNullOrEmpty(correctKey)
+                ? QuestionMapper.IndexOfKey(question, correctKey)
+                : question.correctIndex;
+            bool correct = serverCorrect ?? (pickedIndex == correctIndex);
+
             if (answerBody != null)
             {
                 string body = question.explanation ?? string.Empty;
-                if (!correct)
-                    body = "Đáp án đúng: " + OptionLine(question, question.correctIndex) + "\n" + body;
+                if (!correct && correctIndex >= 0)
+                    body = "Đáp án đúng: " + OptionLine(question, correctIndex) + "\n" + body;
                 answerBody.text = body;
                 answerBody.enableAutoSizing = true;
                 answerBody.fontSizeMax = 30.6f;
@@ -213,6 +277,7 @@ namespace FluMix
         {
             locked = true;
             picked = null;
+            current = null;
             Hide(rightHighlight);
             Hide(wrongHighlight);
             if (explanation != null)
@@ -326,11 +391,13 @@ namespace FluMix
 
         static string OptionLine(QuestionData question, int index)
         {
-            string letter = index >= 0 && index < 26 ? ((char)('A' + index)).ToString() : "?";
+            string key = QuestionMapper.KeyAt(question, index);
+            if (string.IsNullOrEmpty(key))
+                key = index >= 0 && index < 26 ? ((char)('A' + index)).ToString() : "?";
             string option = question != null && question.options != null && index >= 0 && index < question.options.Length
                 ? question.options[index]
                 : string.Empty;
-            return letter + ". " + option;
+            return key + ". " + option;
         }
     }
 }
