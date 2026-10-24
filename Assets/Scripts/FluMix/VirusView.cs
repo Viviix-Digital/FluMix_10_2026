@@ -10,7 +10,10 @@ namespace FluMix
         [SerializeField] Image image;
         [SerializeField] Image flash;
         [SerializeField] SpriteSheetPlayer sheet;
-        [SerializeField] Vector3 flightSmokeLocal = new Vector3(0f, 90f, -1300f);
+        [Tooltip("XY offset from virus in local space (trail sits slightly behind/above).")]
+        [SerializeField] Vector2 flightSmokeLocalXY = new Vector2(0f, 40f);
+        [Tooltip("Preferred world Z. If that point is behind Main Camera, ShotPlaneZ is used instead.")]
+        [SerializeField] float flightSmokeWorldZ = -1300f;
         UIEffect uiEffect;
         GameObject flightSmoke;
 
@@ -207,20 +210,72 @@ namespace FluMix
             effect.shadowDistance = new Vector2(0.4f, 0f);
         }
 
+        void LateUpdate()
+        {
+            if (flightSmoke != null)
+                SyncFlightSmokePose();
+        }
+
         void StartFlightSmoke(GameObject prefab)
         {
             StopFlightSmoke();
             if (prefab == null)
                 return;
 
-            flightSmoke = Instantiate(prefab, transform);
-            flightSmoke.name = prefab.name;
-            flightSmoke.transform.localPosition = flightSmokeLocal;
-            flightSmoke.transform.localRotation = Quaternion.identity;
-            flightSmoke.transform.localScale = Vector3.one;
+            // World space (not UI child): Overlay canvas does not feed ParticleSystemRenderer.
+            FluMixShotVfx shots = FindAnyObjectByType<FluMixShotVfx>();
+            Transform parent = shots != null ? shots.transform : null;
+            flightSmoke = parent != null ? Instantiate(prefab, parent) : Instantiate(prefab);
+            flightSmoke.name = prefab.name + " (Flight)";
+            EnsureCameraSeesSmokeDepth();
+            SyncFlightSmokePose();
             ParticleSystem[] systems = flightSmoke.GetComponentsInChildren<ParticleSystem>(true);
             for (int i = 0; i < systems.Length; i++)
+            {
+                var main = systems[i].main;
+                main.simulationSpace = ParticleSystemSimulationSpace.World;
                 systems[i].Play(true);
+            }
+        }
+
+        void SyncFlightSmokePose()
+        {
+            if (flightSmoke == null)
+                return;
+
+            Vector3 world = transform.TransformPoint(new Vector3(flightSmokeLocalXY.x, flightSmokeLocalXY.y, 0f));
+            world.z = ResolveSmokeWorldZ(world);
+            flightSmoke.transform.SetPositionAndRotation(world, Quaternion.identity);
+        }
+
+        float ResolveSmokeWorldZ(Vector3 worldXY)
+        {
+            Camera cam = Camera.main;
+            float preferred = flightSmokeWorldZ;
+            if (cam == null)
+                return preferred;
+
+            Vector3 probe = worldXY;
+            probe.z = preferred;
+            // Main Camera looks +Z from ~z=17; absolute -1300 is behind it (viewport.z < 0).
+            if (cam.WorldToViewportPoint(probe).z > cam.nearClipPlane)
+                return preferred;
+
+            FluMixShotVfx shots = FindAnyObjectByType<FluMixShotVfx>();
+            float plane = shots != null ? shots.ShotPlaneZ : cam.transform.position.z + 95f;
+            return plane;
+        }
+
+        void EnsureCameraSeesSmokeDepth()
+        {
+            Camera cam = Camera.main;
+            if (cam == null)
+                return;
+
+            float plane = ResolveSmokeWorldZ(cam.transform.position);
+            float depth = Mathf.Abs(cam.transform.position.z - plane) + 100f;
+            if (cam.farClipPlane < depth)
+                cam.farClipPlane = depth;
         }
 
         void StopFlightSmoke()

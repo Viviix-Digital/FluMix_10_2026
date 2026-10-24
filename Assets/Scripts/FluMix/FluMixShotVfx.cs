@@ -12,6 +12,8 @@ namespace FluMix
         [SerializeField] GameObject lineShotGPrefab;
         [SerializeField] GameObject lineShotTPrefab;
 
+        public float ShotPlaneZ => shotPlaneZ;
+
         class LineShot
         {
             public GameObject root;
