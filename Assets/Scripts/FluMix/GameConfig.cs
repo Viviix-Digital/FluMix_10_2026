@@ -95,6 +95,9 @@ namespace FluMix
         public float winShieldStartScale = 0.4f;
         public float winShieldPeakScale = 1.05f;
         public float winShieldSwayDegrees = 8f;
+        [Tooltip("URL video thắng boss (để trống = dùng URL đã gán trên VideoPlayer).")]
+        public string winVideoUrl = "https://Phongcumnhenhang.com/video_2026-10-27_11-14-07.mp4";
+        public float winVideoPrepareSeconds = 60f;
         public int confettiCount = 48;
         public float confettiSeconds = 3.2f;
         public float redFlashSeconds = 0.15f;

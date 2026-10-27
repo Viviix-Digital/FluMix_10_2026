@@ -145,7 +145,8 @@ namespace FluMix
                 return;
             }
 
-            Pulse = true;
+            // Temporarily: static virus sprite only (no sheet / pulse animation).
+            Pulse = false;
             if (sheet != null)
             {
                 sheet.Stop(false);

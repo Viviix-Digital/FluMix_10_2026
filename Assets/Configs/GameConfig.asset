@@ -21,7 +21,14 @@ MonoBehaviour:
   questionSeconds: 10
   bossCountdownStep: 1
   explainHoldSeconds: 1.2
+  answerDescriptionDelay: 1
+  answerDescriptionSeconds: 8
+  playConfetti: 0
   virusMoveSeconds: 8
+  virusStepSeconds: 2.8
+  virusStepSlideSeconds: 0.45
+  virusCellCount: 8
+  bossEnterSeconds: 2.6
   spawnDelay: 0.6
   bossScoreMilestones: e8030000d00700008813000010270000
   maxQuestions: 10
@@ -69,6 +76,8 @@ MonoBehaviour:
   winShieldStartScale: 0.4
   winShieldPeakScale: 1.05
   winShieldSwayDegrees: 8
+  winVideoUrl: https://Phongcumnhenhang.com/video_2026-10-27_11-14-07.mp4
+  winVideoPrepareSeconds: 60
   confettiCount: 48
   confettiSeconds: 3.2
   redFlashSeconds: 0.15
@@ -78,7 +87,12 @@ MonoBehaviour:
   deathSeconds: 0.28
   laneSpacing: 150
   heroRecoilPixels: 18
+  eggGravity: 1650
+  eggMinSpeed: 520
+  eggMaxSpeed: 1320
+  eggDragMax: 460
   eggHitRadius: 110
+  aimDashCount: 22
   wrongMarkWidth: 220
   wrongMarkHeight: 64
   wrongMarkSeconds: 0.45
@@ -90,7 +104,3 @@ MonoBehaviour:
   debugBumpScore: 1000
   debugQuickSeconds: 5
   maxDeltaTime: 0.1
-  virusStepSeconds: 2.8
-  virusStepSlideSeconds: 0.45
-  virusCellCount: 8
-  bossEnterSeconds: 2.6

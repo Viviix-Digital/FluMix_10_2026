@@ -223,14 +223,20 @@ namespace FluMix
                 Place(wrongHighlight, pickedIndex);
                 FluMixSfx.Play("quiz_wrong");
             }
+            else
+            {
+                // Timeout: still flash Wrong Answer on first option so overlay is visible.
+                Place(wrongHighlight, 0);
+                FluMixSfx.Play("quiz_wrong");
+            }
 
             if (correctIndex >= 0 && correctIndex != pickedIndex)
                 Place(rightHighlight, correctIndex);
 
             // Hold so Wrong Answer overlay is visible before boss attack continues.
-            float hold = config != null ? Mathf.Max(0.6f, config.explainHoldSeconds) : 1.2f;
+            float hold = config != null ? Mathf.Max(1.2f, config.explainHoldSeconds) : 1.5f;
             if (hold > 0f)
-                yield return new WaitForSeconds(hold);
+                yield return new WaitForSecondsRealtime(hold);
         }
 
         public IEnumerator ShowAnswerDescription(QuestionData question, int pickedIndex, string correctKey = null, bool? serverCorrect = null)
@@ -334,8 +340,10 @@ namespace FluMix
                 ? option.anchoredPosition.y
                 : mark.parent.InverseTransformPoint(option.position).y;
             mark.anchoredPosition = position;
+            // Keep authored Image color/alpha — do not force opaque.
             highlight.gameObject.SetActive(true);
             highlight.raycastTarget = false;
+            mark.SetAsLastSibling();
         }
 
         void SetButtons(bool value)

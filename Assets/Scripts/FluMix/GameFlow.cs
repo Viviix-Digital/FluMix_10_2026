@@ -342,6 +342,8 @@ namespace FluMix
             SetScreen(FluMixScreen.Battle);
             if (battle != null)
                 battle.BeginRound();
+            if (fx != null)
+                fx.PreloadWinVideo();
             RefreshHud();
             startingRound = false;
         }

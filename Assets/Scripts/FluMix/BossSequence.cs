@@ -88,11 +88,13 @@ namespace FluMix
             running = false;
             acceptAnswer = false;
             queued = ForcedAnswer.None;
+            FluMixSfx.SetMusicMuted(false);
             if (fx != null)
             {
                 fx.HideWarning();
                 fx.HideBoss();
                 fx.HideWinBanner();
+                fx.HideWinVideo();
                 fx.ShowQuestion(false);
             }
 
@@ -108,6 +110,9 @@ namespace FluMix
             bannerDismissed = false;
             battle.SetPaused(true);
             flow.SetTimerPaused(config.pauseRoundTimerDuringBoss);
+            // Warm URL video during warning / boss intro / question so win playback is instant.
+            if (fx != null)
+                fx.PreloadWinVideo();
             flow.SetScreen(FluMixScreen.Warning);
 
             yield return fx.PlayWarning();
@@ -212,7 +217,7 @@ namespace FluMix
             }
 
             yield return presenter.Reveal(question, chosen, correctKey, correct);
-            // Wrong / timeout: skip explanation — after Wrong Answer overlay, boss attacks as before.
+            // Wrong / timeout: skip explanation — Wrong Answer overlay already held in Reveal.
             if (correct)
                 yield return presenter.ShowAnswerDescription(question, chosen, correctKey, correct);
             fx.ShowQuestion(false);
@@ -232,9 +237,10 @@ namespace FluMix
                 fx.HideBoss();
                 if (battle != null)
                     battle.ClearField();
-                fx.PlayConfetti();
-                yield return fx.PlayWinShield();
-                fx.PlayScorePopup(pointsDelta, Vector2.zero);
+                // Correct: play win video fully (no shield / particle VFX), then Continue.
+                FluMixSfx.SetMusicMuted(true);
+                yield return fx.PlayWinVideo();
+                FluMixSfx.SetMusicMuted(false);
                 bannerEndsRound = flow.IsRoundOver;
                 fx.ShowWinBanner(bannerEndsRound);
                 while (!bannerDismissed)

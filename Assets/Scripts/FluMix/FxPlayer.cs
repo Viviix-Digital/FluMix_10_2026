@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.Video;
 
 namespace FluMix
 {
@@ -48,6 +49,11 @@ namespace FluMix
         [SerializeField] Sprite resultSprite;
         [SerializeField] Image winShield;
         [SerializeField] SpriteSheetPlayer winSheet;
+        [SerializeField] VideoPlayer winVideo;
+        [SerializeField] RawImage winVideoImage;
+        [SerializeField] string winVideoUrlOverride;
+        Coroutine winVideoPreload;
+        bool winVideoPrepared;
         [SerializeField] Image beam;
         [SerializeField] Image beamCore;
         [SerializeField] Image impact;
@@ -343,6 +349,7 @@ namespace FluMix
                 winButtonImage.gameObject.SetActive(false);
             if (boss != null)
                 boss.gameObject.SetActive(false);
+            HideWinVideo();
             StopConfetti();
             warningPulse = false;
             bossShaking = false;
@@ -577,21 +584,9 @@ namespace FluMix
 
         public IEnumerator PlayWinShield()
         {
-            // Keep the 2D WinShield Image off — win resolve uses EnergyShield VFX only.
-            if (winShield != null)
-                winShield.gameObject.SetActive(false);
-
-            FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
-            if (shots == null)
-                shots = FindAnyObjectByType<FluMixShotVfx>();
-            if (shots != null)
-                shots.PlayWinOverUi();
-
-            float duration = config != null && config.winShieldDuration > 0.05f ? config.winShieldDuration : 2f;
-            yield return new WaitForSeconds(duration);
-
-            if (shots != null)
-                shots.HideWin();
+            // Deprecated for correct-answer resolve — use PlayWinVideo instead.
+            HideWinShield();
+            yield break;
         }
 
         public void HideWinShield()
@@ -607,6 +602,203 @@ namespace FluMix
                 winShield.rectTransform.localEulerAngles = Vector3.zero;
                 winShield.rectTransform.localScale = Vector3.one;
             }
+        }
+
+        public void PreloadWinVideo()
+        {
+            EnsureWinVideo();
+            if (winVideo == null)
+                return;
+            if (winVideoPrepared && winVideo.isPrepared)
+                return;
+            if (winVideoPreload != null)
+                return;
+            winVideoPreload = StartCoroutine(PreloadWinVideoRoutine());
+        }
+
+        IEnumerator PreloadWinVideoRoutine()
+        {
+            EnsureWinVideo();
+            if (winVideo == null)
+            {
+                winVideoPreload = null;
+                yield break;
+            }
+
+            ApplyWinVideoSource();
+            // Keep GO active so Prepare keeps working; stay invisible (alpha 0).
+            SetWinVideoVisible(false);
+            winVideo.playOnAwake = false;
+            winVideo.isLooping = false;
+            winVideo.waitForFirstFrame = true;
+            winVideoPrepared = false;
+
+            if (winVideo.isPlaying)
+                winVideo.Stop();
+
+            winVideo.Prepare();
+            float limit = config != null && config.winVideoPrepareSeconds > 1f
+                ? config.winVideoPrepareSeconds
+                : 60f;
+            float elapsed = 0f;
+            while (!winVideo.isPrepared && elapsed < limit)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+
+            winVideoPrepared = winVideo.isPrepared;
+            if (!winVideoPrepared)
+                Debug.LogWarning("[FluMix] Win video prepare timed out / failed: " + winVideo.url);
+            winVideoPreload = null;
+        }
+
+        public IEnumerator PlayWinVideo()
+        {
+            EnsureWinVideo();
+            HideWinShield();
+
+            if (winVideo == null)
+                yield break;
+
+            ApplyWinVideoSource();
+            // Ensure prepared (preload may still be running).
+            if (!winVideo.isPrepared)
+            {
+                if (winVideoPreload == null)
+                    PreloadWinVideo();
+                float limit = config != null && config.winVideoPrepareSeconds > 1f
+                    ? config.winVideoPrepareSeconds
+                    : 60f;
+                float wait = 0f;
+                while (!winVideo.isPrepared && wait < limit)
+                {
+                    wait += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+            }
+
+            if (!winVideo.isPrepared)
+            {
+                Debug.LogWarning("[FluMix] Skip win video — not prepared.");
+                HideWinVideo();
+                yield break;
+            }
+
+            bool ended = false;
+            void OnEnded(VideoPlayer _)
+            {
+                ended = true;
+            }
+
+            winVideo.isLooping = false;
+            winVideo.loopPointReached += OnEnded;
+            winVideo.time = 0.0;
+            winVideo.Play();
+
+            // Show only after Play so first frame is ready (avoid black flash).
+            SetWinVideoVisible(true);
+
+            float timeout = winVideo.length > 0.5 ? (float)winVideo.length + 2f : 90f;
+            float elapsed = 0f;
+            while (!ended && elapsed < timeout)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                if (!winVideo.isPlaying && elapsed > 0.75f && winVideo.time >= winVideo.length - 0.05)
+                    break;
+                yield return null;
+            }
+
+            winVideo.loopPointReached -= OnEnded;
+            HideWinVideo();
+            // Warm next boss win while battle continues.
+            PreloadWinVideo();
+        }
+
+        public void HideWinVideo()
+        {
+            EnsureWinVideo();
+            if (winVideo != null && winVideo.isPlaying)
+                winVideo.Stop();
+
+            // Keep GameObject active for background Prepare; only hide visually.
+            SetWinVideoVisible(false);
+            winVideoPrepared = winVideo != null && winVideo.isPrepared;
+        }
+
+        void SetWinVideoVisible(bool visible)
+        {
+            EnsureWinVideo();
+            if (winVideoImage != null)
+            {
+                if (!winVideoImage.gameObject.activeSelf)
+                    winVideoImage.gameObject.SetActive(true);
+                Color color = winVideoImage.color;
+                color.a = visible ? 1f : 0f;
+                winVideoImage.color = color;
+                winVideoImage.raycastTarget = visible;
+                if (visible)
+                    winVideoImage.rectTransform.SetAsLastSibling();
+            }
+            else if (winVideo != null)
+            {
+                winVideo.gameObject.SetActive(true);
+            }
+        }
+
+        void ApplyWinVideoSource()
+        {
+            if (winVideo == null)
+                return;
+
+            string url = winVideoUrlOverride;
+            if (string.IsNullOrWhiteSpace(url) && config != null)
+                url = config.winVideoUrl;
+            if (string.IsNullOrWhiteSpace(url))
+                url = winVideo.url;
+
+            winVideo.source = VideoSource.Url;
+            if (!string.IsNullOrWhiteSpace(url) && winVideo.url != url)
+            {
+                winVideo.url = url;
+                winVideoPrepared = false;
+            }
+        }
+
+        void EnsureWinVideo()
+        {
+            if (winVideo != null && winVideoImage != null)
+                return;
+
+            Transform root = shakeRoot != null ? shakeRoot : (arena != null ? arena.parent : null);
+            if (root == null)
+                root = transform;
+
+            Transform found = null;
+            Transform[] kids = root.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < kids.Length; i++)
+            {
+                if (kids[i] != null && kids[i].name == "Video")
+                {
+                    found = kids[i];
+                    break;
+                }
+            }
+
+            if (found == null)
+            {
+                var players = FindObjectsByType<VideoPlayer>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+                if (players != null && players.Length > 0)
+                    found = players[0].transform;
+            }
+
+            if (found == null)
+                return;
+
+            if (winVideo == null)
+                winVideo = found.GetComponent<VideoPlayer>();
+            if (winVideoImage == null)
+                winVideoImage = found.GetComponent<RawImage>();
         }
 
         public void PlayConfetti()
@@ -632,6 +824,7 @@ namespace FluMix
 
         public void ShowWinBanner(bool roundOver)
         {
+            // After win video: show WinBoss banner + Continue / Result button (no shield VFX).
             if (winBanner != null)
             {
                 winBanner.gameObject.SetActive(true);
@@ -656,6 +849,7 @@ namespace FluMix
             if (winButtonImage != null)
                 winButtonImage.gameObject.SetActive(false);
             HideWinShield();
+            HideWinVideo();
             StopConfetti();
         }
 

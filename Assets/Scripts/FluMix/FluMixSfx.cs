@@ -39,6 +39,8 @@ namespace FluMix
         AudioSource music;
         AudioSource voice;
         bool battleMusic;
+        bool musicMuted;
+        float musicVolume = 1f;
 
         void Awake()
         {
@@ -50,6 +52,7 @@ namespace FluMix
             voice.playOnAwake = false;
             Route(music, "Music");
             Route(voice, "SFX");
+            musicVolume = music.volume;
         }
 
         public static void Play(string id)
@@ -62,6 +65,12 @@ namespace FluMix
         {
             if (Instance != null)
                 Instance.PlayMusic(battle);
+        }
+
+        public static void SetMusicMuted(bool muted)
+        {
+            if (Instance != null)
+                Instance.MuteMusic(muted);
         }
 
         public void PlayCue(string id)
@@ -84,6 +93,23 @@ namespace FluMix
                 return;
             music.clip = clip;
             music.Play();
+            music.volume = musicMuted ? 0f : musicVolume;
+        }
+
+        public void MuteMusic(bool muted)
+        {
+            musicMuted = muted;
+            if (music == null)
+                return;
+            if (muted)
+            {
+                musicVolume = music.volume > 0.001f ? music.volume : musicVolume;
+                music.volume = 0f;
+            }
+            else
+            {
+                music.volume = musicVolume > 0.001f ? musicVolume : 1f;
+            }
         }
 
         void Route(AudioSource source, string groupName)

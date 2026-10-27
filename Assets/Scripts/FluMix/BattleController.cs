@@ -707,7 +707,8 @@ namespace FluMix
                 airborne = airborne
             };
             view.Rect.localScale = Vector3.one;
-            view.Pulse = !UsesSheet(type);
+            // Temporarily disable virus pulse scale animation too.
+            view.Pulse = false;
             alive.Add(active);
             PlaceVirus(active, 0f);
             return true;
@@ -825,7 +826,7 @@ namespace FluMix
             VirusType type = virus.view.Type;
             virus.view.SetEntranceLanded();
             virus.view.Apply(type, SpriteFor(type), UsesSheet(type));
-            virus.view.Pulse = !UsesSheet(type);
+            virus.view.Pulse = false;
             PlaceVirus(virus, 0f);
         }
 
@@ -884,10 +885,8 @@ namespace FluMix
 
         bool UsesSheet(VirusType type)
         {
-            bool sheetsReady = type == VirusType.Green
-                ? greenUsesSheet
-                : HasSprite(type == VirusType.Orange ? orangeFrames : redFrames);
-            return false && sheetsReady;
+            // Temporarily disable virus sprite-sheet animation (idle/hit sheets).
+            return false;
         }
 
         static bool HasSprite(Sprite[] frames)
