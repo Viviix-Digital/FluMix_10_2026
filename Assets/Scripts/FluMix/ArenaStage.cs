@@ -110,7 +110,7 @@ namespace FluMix
             virus.SetScale(Vector3.one * scale);
             Show(virus.Image);
             if (virus.Image != null)
-                virus.Image.raycastTarget = true;
+                virus.Image.raycastTarget = false;
             if (actors != null)
                 virus.Rect.SetSiblingIndex(Mathf.Clamp(lane, 0, Mathf.Max(0, actors.childCount - 1)));
         }

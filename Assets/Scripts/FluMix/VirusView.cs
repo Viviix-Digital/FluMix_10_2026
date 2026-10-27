@@ -84,14 +84,15 @@ namespace FluMix
         {
             if (image == null)
                 image = GetComponent<Image>();
-            Button button = GetComponent<Button>();
-            if (button == null)
-                button = gameObject.AddComponent<Button>();
-            button.targetGraphic = image;
+            // Combat uses hero ray aim — virus must not steal hero swipe hits.
             if (image != null)
-                image.raycastTarget = true;
-            button.onClick.RemoveListener(HandleClick);
-            button.onClick.AddListener(HandleClick);
+                image.raycastTarget = false;
+            Button button = GetComponent<Button>();
+            if (button != null)
+            {
+                button.onClick.RemoveListener(HandleClick);
+                button.enabled = false;
+            }
         }
 
         void OnDisable()

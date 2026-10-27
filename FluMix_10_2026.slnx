@@ -1,6 +1,6 @@
 ﻿<Solution>
-  <Project Path="Unity.Timeline.csproj" />
   <Project Path="Unity.AI.Sound.csproj" />
+  <Project Path="Unity.Timeline.csproj" />
   <Project Path="Unity.PlasticSCM.Editor.csproj" />
   <Project Path="Unity.ProBuilder.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
@@ -9,8 +9,8 @@
   <Project Path="Unity.Collections.csproj" />
   <Project Path="Unity.ProBuilder.Poly2Tri.csproj" />
   <Project Path="Unity.VisualScripting.Core.Editor.csproj" />
-  <Project Path="Unity.PerformanceTesting.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.Runtime.csproj" />
+  <Project Path="Unity.PerformanceTesting.Editor.csproj" />
   <Project Path="Unity.AI.Assistant.UI.Editor.csproj" />
   <Project Path="Unity.AI.Toolkit.Utility.csproj" />
   <Project Path="Unity.AI.Generators.Redux.csproj" />
@@ -25,8 +25,8 @@
   <Project Path="Unity.Searcher.Editor.csproj" />
   <Project Path="Unity.ProBuilder.Editor.csproj" />
   <Project Path="Unity.VisualScripting.Core.csproj" />
-  <Project Path="Unity.AI.Navigation.Editor.ConversionSystem.csproj" />
   <Project Path="Unity.VisualScripting.State.Editor.csproj" />
+  <Project Path="Unity.AI.Navigation.Editor.ConversionSystem.csproj" />
   <Project Path="Unity.AI.Pbr.csproj" />
   <Project Path="Coffee.UIEffect.csproj" />
   <Project Path="Unity.Burst.CodeGen.csproj" />
@@ -35,8 +35,8 @@
   <Project Path="Unity.AI.Toolkit.Accounts.csproj" />
   <Project Path="Unity.PerformanceTesting.csproj" />
   <Project Path="Unity.AI.ModelSelector.csproj" />
-  <Project Path="Unity.AI.Assistant.Tools.Editor.csproj" />
   <Project Path="Unity.AI.Animate.csproj" />
+  <Project Path="Unity.AI.Assistant.Tools.Editor.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
   <Project Path="Unity.AI.Image.csproj" />
   <Project Path="Unity.AI.Generators.UI.csproj" />

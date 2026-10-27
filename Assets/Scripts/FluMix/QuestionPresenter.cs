@@ -118,8 +118,7 @@ namespace FluMix
                 }
             }
 
-            if (copy.optionKeys != null && copy.correctIndex < 0)
-                QuestionMapper.ShuffleOptions(copy);
+            // Keep API / source order so slot A–D images match returned options.
             return copy;
         }
 
@@ -152,9 +151,8 @@ namespace FluMix
                 {
                     if (visible)
                     {
-                        string key = QuestionMapper.KeyAt(question, i);
-                        string label = question.options[i];
-                        optionLabels[i].text = string.IsNullOrEmpty(key) ? label : key + ". " + label;
+                        // UI artwork already shows A/B/C/D — only bind answer text.
+                        optionLabels[i].text = question.options[i] ?? string.Empty;
                     }
                     else
                     {
@@ -190,7 +188,7 @@ namespace FluMix
 
         public string KeyForIndex(int index) => QuestionMapper.KeyAt(current, index);
 
-        public IEnumerator Reveal(QuestionData question, int pickedIndex, string correctKey = null)
+        public IEnumerator Reveal(QuestionData question, int pickedIndex, string correctKey = null, bool? wasCorrect = null)
         {
             if (question == null)
                 yield break;
@@ -198,20 +196,41 @@ namespace FluMix
             int correctIndex = !string.IsNullOrEmpty(correctKey)
                 ? QuestionMapper.IndexOfKey(question, correctKey)
                 : question.correctIndex;
+            bool correct = wasCorrect ?? (pickedIndex >= 0 && correctIndex >= 0 && pickedIndex == correctIndex);
 
-            if (correctIndex >= 0)
-                Place(rightHighlight, correctIndex);
-            if (pickedIndex >= 0 && pickedIndex != correctIndex)
-                Place(wrongHighlight, pickedIndex);
-            else
-                Hide(wrongHighlight);
+            // If player key matches revealed correctAnswer, never treat as wrong visually.
+            if (!correct && pickedIndex >= 0 && correctIndex >= 0 && pickedIndex == correctIndex)
+                correct = true;
 
             if (explanation != null)
                 explanation.gameObject.SetActive(false);
 
-            if (pickedIndex >= 0 && pickedIndex != correctIndex)
+            // Always clear both first so scene-default active overlays cannot stack.
+            Hide(rightHighlight);
+            Hide(wrongHighlight);
+
+            if (correct)
+            {
+                int rightIndex = correctIndex >= 0 ? correctIndex : pickedIndex;
+                if (rightIndex >= 0)
+                    Place(rightHighlight, rightIndex);
+                yield break;
+            }
+
+            // Wrong / timeout: Wrong on picked; Right only when known and on a different option.
+            if (pickedIndex >= 0)
+            {
+                Place(wrongHighlight, pickedIndex);
                 FluMixSfx.Play("quiz_wrong");
-            yield break;
+            }
+
+            if (correctIndex >= 0 && correctIndex != pickedIndex)
+                Place(rightHighlight, correctIndex);
+
+            // Hold so Wrong Answer overlay is visible before boss attack continues.
+            float hold = config != null ? Mathf.Max(0.6f, config.explainHoldSeconds) : 1.2f;
+            if (hold > 0f)
+                yield return new WaitForSeconds(hold);
         }
 
         public IEnumerator ShowAnswerDescription(QuestionData question, int pickedIndex, string correctKey = null, bool? serverCorrect = null)

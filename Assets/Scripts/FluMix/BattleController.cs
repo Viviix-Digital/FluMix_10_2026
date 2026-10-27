@@ -188,6 +188,8 @@ namespace FluMix
 
         void Update()
         {
+            RefreshDraggingAims();
+
             if (!running || paused || config == null)
                 return;
 
@@ -378,6 +380,14 @@ namespace FluMix
             if (launcher == null || launcher.flying)
                 return;
 
+            // Already aiming this hero (PointerDown then BeginDrag) — keep pull, just refresh aim.
+            if (launcher.dragging)
+            {
+                if (PointerArena(eventData, out Vector2 resumePointer))
+                    ApplyAim(launcher, hero, resumePointer);
+                return;
+            }
+
             launcher.dragging = true;
             launcher.pull = 0f;
             launcher.power = 0f;
@@ -389,6 +399,8 @@ namespace FluMix
             }
             if (stage != null)
                 stage.SetArmed(hero.Id);
+            if (PointerArena(eventData, out Vector2 pointer))
+                ApplyAim(launcher, hero, pointer);
         }
 
         void OnAimMoved(HeroView hero, PointerEventData eventData)
@@ -405,13 +417,13 @@ namespace FluMix
         void OnAimEnded(HeroView hero, PointerEventData eventData)
         {
             Launcher launcher = FindLauncher(hero);
-            if (launcher == null)
+            if (launcher == null || !launcher.dragging)
                 return;
 
-            if (launcher.dragging && PointerArena(eventData, out Vector2 pointer))
+            if (PointerArena(eventData, out Vector2 pointer))
                 ApplyAim(launcher, hero, pointer);
 
-            bool fire = launcher.dragging && CanAim(hero) && launcher.pull >= Mathf.Max(8f, pullToFire);
+            bool fire = CanAim(hero) && launcher.pull >= Mathf.Max(8f, pullToFire);
             launcher.dragging = false;
             if (stage != null)
                 stage.SetArmed(null);
@@ -420,6 +432,42 @@ namespace FluMix
                 aimHintDone = true;
                 StartCoroutine(FireBeam(launcher));
             }
+        }
+
+        void RefreshDraggingAims()
+        {
+            if (!running || paused || inputLocked || launchers.Count == 0)
+                return;
+
+            for (int i = 0; i < launchers.Count; i++)
+            {
+                Launcher launcher = launchers[i];
+                if (launcher == null || !launcher.dragging || launcher.flying || launcher.hero == null)
+                    continue;
+                if (!CanAim(launcher.hero))
+                    continue;
+                if (!CurrentPointerArena(out Vector2 pointer))
+                    continue;
+
+                ApplyAim(launcher, launcher.hero, pointer);
+            }
+        }
+
+        bool CurrentPointerArena(out Vector2 local)
+        {
+            local = Vector2.zero;
+            if (arena == null)
+                return false;
+
+            Vector2 screen = Input.mousePosition;
+            if (Input.touchCount > 0)
+                screen = Input.GetTouch(0).position;
+
+            Canvas canvas = arena.GetComponentInParent<Canvas>();
+            Camera cam = canvas != null && canvas.renderMode != RenderMode.ScreenSpaceOverlay
+                ? canvas.worldCamera
+                : null;
+            return RectTransformUtility.ScreenPointToLocalPointInRectangle(arena, screen, cam, out local);
         }
 
         void ApplyAim(Launcher launcher, HeroView hero, Vector2 pointer)
@@ -467,7 +515,7 @@ namespace FluMix
             for (int i = 0; i < alive.Count; i++)
             {
                 ActiveVirus virus = alive[i];
-                if (virus == null || virus.dying || virus.view == null)
+                if (virus == null || virus.dying || virus.airborne || virus.view == null)
                     continue;
 
                 Vector2 to = VirusBody(virus) - origin;
@@ -515,17 +563,20 @@ namespace FluMix
             Rect bounds = arena != null ? arena.rect : new Rect(-960f, -540f, 1920f, 1080f);
             float distance = AimLength(origin, direction, launcher.power, bounds);
             Vector2 end = origin + direction * distance;
-            ActiveVirus hit = null;
-            if (RayPoint(origin, direction, out Vector2 hitPoint) && Vector2.Distance(origin, hitPoint) <= distance + 28f)
+            ActiveVirus hit = RayHit(origin, direction);
+            if (hit != null)
             {
-                end = hitPoint;
-                hit = RayHit(origin, direction);
+                Vector2 body = VirusBody(hit);
+                if (Vector2.Distance(origin, body) <= distance + 28f)
+                    end = body;
+                else
+                    hit = null;
             }
             if (fx != null)
-                yield return fx.PlayBeam(hero.Id, shotStart, end, true, false);
+                yield return fx.PlayBeam(hero.Id, shotStart, end, hit != null, false);
 
             launcher.flying = false;
-            if (!running || hit == null || hit.view == null)
+            if (!running || hit == null || hit.view == null || hit.dying || hit.airborne)
             {
                 inputLocked = false;
                 yield break;
@@ -538,10 +589,16 @@ namespace FluMix
         IEnumerator ResolveImpact(HeroView hero, ActiveVirus virus, bool correct)
         {
             inputLocked = true;
+            if (virus == null || virus.view == null || virus.dying || virus.airborne)
+            {
+                inputLocked = false;
+                yield break;
+            }
+
             if (correct)
                 virus.dying = true;
 
-            Vector2 to = virus.view.Rect.anchoredPosition;
+            Vector2 to = VirusBody(virus);
             int delta = correct ? config.correctHeroScore : config.wrongHeroScore;
             score.Add(delta);
             if (roundSession != null)
@@ -953,7 +1010,7 @@ namespace FluMix
             for (int i = 0; i < alive.Count; i++)
             {
                 ActiveVirus virus = alive[i];
-                if (virus == null || virus.dying || virus.view == null)
+                if (virus == null || virus.dying || virus.airborne || virus.view == null)
                     continue;
 
                 Vector2 center = VirusBody(virus);
@@ -982,9 +1039,7 @@ namespace FluMix
             if (virus == null)
                 return false;
 
-            Vector2 center = VirusBody(virus);
-            float along = Vector2.Dot(center - origin, direction);
-            point = origin + direction * Mathf.Max(24f, along);
+            point = VirusBody(virus);
             return true;
         }
 

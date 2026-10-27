@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using FluMix.Api;
 using FluMix.Data;
@@ -186,6 +187,16 @@ namespace FluMix
                     correctKey = string.IsNullOrEmpty(progress.answer.correctAnswer)
                         ? null
                         : progress.answer.correctAnswer;
+
+                    // Guard: positive points or matching revealed key means a correct answer.
+                    if (!correct && pointsDelta > 0)
+                        correct = true;
+                    if (!correct
+                        && !string.IsNullOrEmpty(correctKey)
+                        && !string.IsNullOrEmpty(answerKey)
+                        && string.Equals(answerKey, correctKey, StringComparison.OrdinalIgnoreCase))
+                        correct = true;
+
                     if (score != null)
                         score.SetScore(services.RoundSession.HudScore);
                 }
@@ -200,8 +211,10 @@ namespace FluMix
                     correctKey = QuestionMapper.KeyAt(question, question.correctIndex);
             }
 
-            yield return presenter.Reveal(question, chosen, correctKey);
-            yield return presenter.ShowAnswerDescription(question, chosen, correctKey, correct);
+            yield return presenter.Reveal(question, chosen, correctKey, correct);
+            // Wrong / timeout: skip explanation — after Wrong Answer overlay, boss attacks as before.
+            if (correct)
+                yield return presenter.ShowAnswerDescription(question, chosen, correctKey, correct);
             fx.ShowQuestion(false);
             presenter.HideAll();
 

@@ -24,6 +24,8 @@ namespace FluMix
         public event Action<HeroView, PointerEventData> AimMoved;
         public event Action<HeroView, PointerEventData> AimEnded;
 
+        bool aiming;
+
         public void Bind(HeroId heroId, RectTransform muzzlePoint)
         {
             id = heroId;
@@ -58,6 +60,7 @@ namespace FluMix
 
         void OnDisable()
         {
+            aiming = false;
             if (button != null)
                 button.onClick.RemoveListener(HandleClick);
         }
@@ -69,26 +72,42 @@ namespace FluMix
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            aiming = true;
             AimBegan?.Invoke(this, eventData);
         }
 
         public void OnPointerUp(PointerEventData eventData)
         {
+            if (!aiming)
+                return;
+            aiming = false;
             AimEnded?.Invoke(this, eventData);
         }
 
         public void OnBeginDrag(PointerEventData eventData)
         {
-            AimBegan?.Invoke(this, eventData);
+            // PointerDown already started aim — do not reset pull via AimBegan again.
+            if (!aiming)
+            {
+                aiming = true;
+                AimBegan?.Invoke(this, eventData);
+            }
+            AimMoved?.Invoke(this, eventData);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
+            if (!aiming)
+                return;
             AimMoved?.Invoke(this, eventData);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
+            // PointerUp usually ends aim first; ignore the duplicate EndDrag.
+            if (!aiming)
+                return;
+            aiming = false;
             AimEnded?.Invoke(this, eventData);
         }
 
