@@ -77,10 +77,11 @@ namespace FluMix
             Add(grid, "+100", () => flow.DebugAddScore(flow.Config.correctHeroScore));
             Add(grid, "+1000", () => flow.DebugAddScore(flow.Config.debugBumpScore));
             Add(grid, "−50", () => flow.DebugAddScore(flow.Config.wrongHeroScore));
-            Add(grid, "Mốc 1000", () => flow.DebugSetScore(Milestone(0)));
-            Add(grid, "Mốc 2000", () => flow.DebugSetScore(Milestone(1)));
-            Add(grid, "Mốc 5000", () => flow.DebugSetScore(Milestone(2)));
-            Add(grid, "Mốc 10000", () => flow.DebugSetScore(Milestone(3)));
+            Add(grid, "Mốc 500", () => flow.DebugSetScore(Milestone(0)));
+            Add(grid, "Mốc 1000", () => flow.DebugSetScore(Milestone(1)));
+            Add(grid, "Mốc 2000", () => flow.DebugSetScore(Milestone(2)));
+            Add(grid, "Mốc 5000", () => flow.DebugSetScore(Milestone(3)));
+            Add(grid, "Mốc 10000", () => flow.DebugSetScore(Milestone(4)));
             Add(grid, "Reset điểm", () => flow.DebugResetScore());
             Add(grid, "Virus xanh", () => flow.DebugSpawn(VirusType.Green));
             Add(grid, "Virus cam", () => flow.DebugSpawn(VirusType.Orange));

@@ -47,7 +47,7 @@ namespace FluMix
         public float bossEnterSeconds = 2.6f;
         public float spawnDelay = 0.6f;
 
-        public int[] bossScoreMilestones = { 1000, 2000, 5000, 10000 };
+        public int[] bossScoreMilestones = { 500, 1000, 2000, 5000, 10000 };
         public int maxQuestions = 10;
         public int simultaneousViruses = 3;
         public bool pauseRoundTimerDuringBoss = true;

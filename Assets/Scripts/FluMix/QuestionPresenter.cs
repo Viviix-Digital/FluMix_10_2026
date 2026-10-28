@@ -28,6 +28,7 @@ namespace FluMix
         bool descriptionDismissed;
         Action<int> picked;
         QuestionData current;
+        QuestionData[] deck;
 
         public QuestionData Current => current;
 
@@ -78,11 +79,35 @@ namespace FluMix
             cursor = 0;
         }
 
+        /// <summary>
+        /// Mỗi ván: copy bank rồi xáo thứ tự câu. Không xáo đáp án trong từng câu.
+        /// </summary>
+        public void PrepareRound(QuestionData[] questions)
+        {
+            cursor = 0;
+            if (questions == null || questions.Length == 0)
+            {
+                deck = null;
+                return;
+            }
+
+            deck = new QuestionData[questions.Length];
+            Array.Copy(questions, deck, questions.Length);
+            for (int i = deck.Length - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                QuestionData tmp = deck[i];
+                deck[i] = deck[j];
+                deck[j] = tmp;
+            }
+        }
+
         public QuestionData TakeNext(QuestionData[] questions)
         {
-            if (questions == null || questions.Length == 0)
+            QuestionData[] source = deck != null && deck.Length > 0 ? deck : questions;
+            if (source == null || source.Length == 0)
                 return null;
-            QuestionData question = questions[cursor % questions.Length];
+            QuestionData question = source[cursor % source.Length];
             cursor++;
             return CloneForDisplay(question);
         }

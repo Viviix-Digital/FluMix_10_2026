@@ -282,8 +282,6 @@ namespace FluMix
                 boss.Abort();
             if (fx != null)
                 fx.HideImmediate();
-            if (questions != null)
-                questions.ResetOrder();
 
             questionsAnswered = 0;
             questionsCorrect = 0;
@@ -334,6 +332,10 @@ namespace FluMix
             {
                 score.ResetScore();
             }
+
+            // Xáo thứ tự câu mỗi ván (đáp án giữ nguyên). Sau khi cache câu hỏi đã sẵn sàng.
+            if (questions != null)
+                questions.PrepareRound(services != null ? services.GetPlayQuestions() : null);
 
             if (battle != null)
                 battle.BindRoundSession(online ? services.RoundSession : null);
@@ -600,7 +602,7 @@ namespace FluMix
             if (services != null)
                 services.ReloadFromPersistent();
             if (questions != null)
-                questions.ResetOrder();
+                questions.PrepareRound(services != null ? services.GetPlayQuestions() : null);
             if (Screen == FluMixScreen.Leaderboard && leaderboardView != null)
                 leaderboardView.Refresh();
         }

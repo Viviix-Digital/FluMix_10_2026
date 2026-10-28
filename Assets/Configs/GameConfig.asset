@@ -30,7 +30,7 @@ MonoBehaviour:
   virusCellCount: 8
   bossEnterSeconds: 2.6
   spawnDelay: 0.6
-  bossScoreMilestones: e8030000d00700008813000010270000
+  bossScoreMilestones: f4010000e8030000d00700008813000010270000
   maxQuestions: 10
   simultaneousViruses: 3
   pauseRoundTimerDuringBoss: 1
