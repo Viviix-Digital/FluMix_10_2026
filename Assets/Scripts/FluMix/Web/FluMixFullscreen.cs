@@ -4,7 +4,7 @@ using UnityEngine;
 namespace FluMix
 {
     /// <summary>
-    /// WebGL: request browser fullscreen + try landscape lock (must run on user click).
+    /// WebGL: request browser fullscreen + landscape lock (must run on user click — Login/Register).
     /// </summary>
     public static class FluMixFullscreen
     {
@@ -13,6 +13,9 @@ namespace FluMix
         static extern void FluMix_RequestFullscreenLandscape();
 #endif
 
+        /// <summary>
+        /// Call from Login / Register button handlers (user gesture).
+        /// </summary>
         public static void EnterForPlay()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
@@ -25,7 +28,6 @@ namespace FluMix
                 Debug.LogWarning("[FluMist] Fullscreen request failed: " + ex.Message);
             }
 #else
-            // Editor / standalone: best-effort only.
             Screen.fullScreen = true;
 #endif
         }

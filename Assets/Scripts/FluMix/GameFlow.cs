@@ -102,60 +102,15 @@ namespace FluMix
 
         IEnumerator BootAuth()
         {
+            // Stay on Login — do NOT auto-enter the game.
+            // Keep saved username/session so the player can just tap Login (user gesture → fullscreen).
             SetScreen(FluMixScreen.Login);
-
-            if (services == null || !services.UseOnlineApi || services.Api == null)
-                yield break;
-
-            if (!TokenStore.HasSession && !services.Api.IsAuthenticated)
-                yield break;
 
             var loginView = FindFirstObjectByType<LoginView>(FindObjectsInactive.Include);
             if (loginView != null)
-                loginView.ShowStatus("Đang đăng nhập…", true);
+                loginView.PrefillFromSession();
 
-            MeDto me = null;
-            string needLogin = null;
-            yield return services.Api.TryRestoreSession(
-                m => me = m,
-                reason => needLogin = reason);
-
-            if (me == null || me.player == null)
-            {
-                if (loginView != null)
-                    loginView.ShowStatus(
-                        string.IsNullOrEmpty(needLogin)
-                            ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
-                            : needLogin,
-                        true);
-                yield break;
-            }
-
-            if (loginView != null)
-                loginView.ShowStatus("Đang tải câu hỏi…", true);
-
-            QuestionsDto questions = null;
-            string qErr = null;
-            yield return services.Api.Questions(
-                q => questions = q,
-                (h, c, m) => qErr = m);
-
-            if (questions == null || questions.questions == null || questions.questions.Length == 0)
-            {
-                if (loginView != null)
-                    loginView.ShowStatus(
-                        (qErr ?? "Không tải được câu hỏi") + " Vui lòng thử lại sau.",
-                        true);
-                yield break;
-            }
-
-            services.SetCachedQuestions(questions);
-            OnLoggedIn(new PlayerRecord
-            {
-                username = me.player.username,
-                displayName = string.IsNullOrEmpty(me.player.fullName) ? me.player.username : me.player.fullName,
-                uuid = me.player.uuid
-            });
+            yield break;
         }
 
         public void OnWinBannerPressed()

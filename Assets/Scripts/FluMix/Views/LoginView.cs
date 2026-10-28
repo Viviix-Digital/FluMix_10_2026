@@ -511,6 +511,21 @@ namespace FluMix
             }
         }
 
+        public void PrefillFromSession()
+        {
+            string savedUser = TokenStore.Username;
+            if (loginUsername != null && !string.IsNullOrEmpty(savedUser))
+                loginUsername.text = savedUser;
+            if (loginPassword != null)
+                loginPassword.text = string.Empty;
+
+            ShowStatus(null, false);
+            if (TokenStore.HasSession)
+                ShowStatus("Nhấn Đăng nhập để tiếp tục.", true);
+            else
+                ShowStatus(null, true);
+        }
+
         public void SubmitLogin()
         {
             if (busy)
@@ -524,18 +539,29 @@ namespace FluMix
 
             if (services != null && services.UseOnlineApi && services.Api != null)
             {
+                // Saved session: tap Login without retyping password.
+                if (TokenStore.HasSession && string.IsNullOrEmpty(pass))
+                {
+                    FluMixFullscreen.EnterForPlay();
+                    StartCoroutine(SubmitRestoreSession());
+                    return;
+                }
+
                 if (string.IsNullOrEmpty(pass))
                 {
                     FailLocal("Mật khẩu không được để trống. Vui lòng thử lại.", true);
                     return;
                 }
 
+                // User gesture → WebGL fullscreen + landscape.
+                FluMixFullscreen.EnterForPlay();
                 StartCoroutine(SubmitOnline(false, user, pass, null));
                 return;
             }
 
             if (services != null && services.Players.TryLogin(user, pass, out PlayerRecord player))
             {
+                FluMixFullscreen.EnterForPlay();
                 FluMixSfx.Play("ui_confirm");
                 flow.OnLoggedIn(player);
                 return;
@@ -575,11 +601,68 @@ namespace FluMix
                 return;
             }
 
+            // User gesture → WebGL fullscreen + landscape.
+            FluMixFullscreen.EnterForPlay();
+
             // fullName giữ khoảng trắng để hiện BXH; username vẫn NormUser trong API.
             string fullName = user != null ? user.Trim() : string.Empty;
             if (string.IsNullOrEmpty(fullName))
                 fullName = FluMistApi.NormUser(user);
             StartCoroutine(SubmitOnline(true, user, pass, fullName));
+        }
+
+        IEnumerator SubmitRestoreSession()
+        {
+            busy = true;
+            SetBusyButtons(false);
+            ShowStatus("Đang đăng nhập…", true);
+
+            MeDto me = null;
+            string needLogin = null;
+            yield return services.Api.TryRestoreSession(
+                m => me = m,
+                reason => needLogin = reason);
+
+            if (me == null || me.player == null)
+            {
+                busy = false;
+                SetBusyButtons(true);
+                FailLocal(
+                    string.IsNullOrEmpty(needLogin)
+                        ? "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại."
+                        : needLogin,
+                    true);
+                yield break;
+            }
+
+            ShowStatus("Đang tải câu hỏi…", true);
+            QuestionsDto questions = null;
+            string qErr = null;
+            yield return services.Api.Questions(
+                q => questions = q,
+                (h, c, m) => qErr = m);
+
+            if (questions == null || questions.questions == null || questions.questions.Length == 0)
+            {
+                busy = false;
+                SetBusyButtons(true);
+                FailLocal((qErr ?? "Không tải được câu hỏi") + " Vui lòng thử lại sau.", true);
+                yield break;
+            }
+
+            services.SetCachedQuestions(questions);
+            var player = new PlayerRecord
+            {
+                username = me.player.username,
+                displayName = string.IsNullOrEmpty(me.player.fullName) ? me.player.username : me.player.fullName,
+                uuid = me.player.uuid
+            };
+
+            busy = false;
+            SetBusyButtons(true);
+            FluMixSfx.Play("ui_confirm");
+            ShowStatus(null, true);
+            flow.OnLoggedIn(player);
         }
 
         IEnumerator SubmitOnline(bool register, string user, string pass, string fullName)

@@ -1,9 +1,6 @@
 mergeInto(LibraryManager.library, {
   FluMix_RequestFullscreenLandscape: function () {
-    var canvas =
-      document.querySelector("#unity-canvas") ||
-      document.querySelector("canvas");
-    var target = canvas || document.documentElement;
+    // Direct fullscreen + landscape lock (no overlay). Call from Login/Register click.
 
     function lockLandscape() {
       try {
@@ -14,6 +11,7 @@ mergeInto(LibraryManager.library, {
     }
 
     try {
+      var target = document.documentElement;
       var req =
         target.requestFullscreen ||
         target.webkitRequestFullscreen ||
