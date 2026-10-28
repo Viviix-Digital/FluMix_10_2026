@@ -1,0 +1,310 @@
+﻿{
+    "statusCode":  200,
+    "message":  "OK",
+    "data":  {
+                 "project":  {
+                                 "slug":  "flumist-2026",
+                                 "name":  "FluMist 2026",
+                                 "status":  "ACTIVE",
+                                 "settings":  {
+                                                  "revealAnswer":  true,
+                                                  "allowedMultipliers":  [
+                                                                             1
+                                                                         ],
+                                                  "maxBonusPerPlay":  0,
+                                                  "maxPlays":  null,
+                                                  "maxPlaysPerDay":  null,
+                                                  "scoringMode":  "FIXED",
+                                                  "speedBonusMax":  100,
+                                                  "speedWindowMs":  20000,
+                                                  "maxExtraPerEvent":  null,
+                                                  "maxExtraPerPlay":  null,
+                                                  "wrongAnswerPoints":  0,
+                                                  "allowRepeatAnswers":  false,
+                                                  "maxAnswersPerPlay":  null
+                                              }
+                             },
+                 "questions":  [
+                                   {
+                                       "codeId":  "ALC75RWF",
+                                       "type":  "SINGLE",
+                                       "content":  "Cúm mùa là bệnh do nguyên nhân nào gây ra?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Vi khuẩn"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Virus cúm"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Thay đổi thời tiết"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Dị ứng"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Cúm mùa do virus cúm gây ra, không phải vi khuẩn hay dị ứng.",
+                                       "orderNo":  1
+                                   },
+                                   {
+                                       "codeId":  "YLFHXFKZ",
+                                       "type":  "SINGLE",
+                                       "content":  "Tiêm vaccine cúm giúp ích gì?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Trị khỏi mọi bệnh hô hấp"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Giúp cơ thể tạo miễn dịch với virus cúm"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Thay cho việc rửa tay"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Chỉ cần tiêm một lần trong đời"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Vaccine cúm giúp cơ thể tạo miễn dịch, làm giảm nguy cơ mắc và biến chứng. Virus đổi chủng nên cần tiêm nhắc theo mùa.",
+                                       "orderNo":  2
+                                   },
+                                   {
+                                       "codeId":  "L6PZYGBB",
+                                       "type":  "SINGLE",
+                                       "content":  "Cách nào giúp hạn chế virus cúm lây qua tay?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Chỉ lau khô tay"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Rửa tay bằng xà phòng và nước"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Dùng kháng sinh mỗi ngày"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Uống nước lạnh"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Rửa tay bằng xà phòng và nước làm giảm virus bám trên tay.",
+                                       "orderNo":  3
+                                   },
+                                   {
+                                       "codeId":  "W36HRD26",
+                                       "type":  "SINGLE",
+                                       "content":  "Khi bị sốt và ho, nên làm gì để hạn chế lây cúm?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Đi học hoặc đi làm bình thường"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Đeo khẩu trang và nghỉ ở nhà"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Dùng chung ly nước"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Không cần che miệng khi ho"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Đeo khẩu trang khi sốt, ho và nghỉ ở nhà giúp hạn chế lây virus cho người khác.",
+                                       "orderNo":  4
+                                   },
+                                   {
+                                       "codeId":  "LAHBQYNP",
+                                       "type":  "SINGLE",
+                                       "content":  "Theo luật của trò chơi, virus xanh lá là virus ở đâu?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Trong máu"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Bên ngoài cơ thể"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Trong phổi"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Trong dạ dày"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Virus xanh là virus bên ngoài cơ thể. Virus cam và đỏ là virus bên trong cơ thể.",
+                                       "orderNo":  5
+                                   },
+                                   {
+                                       "codeId":  "WYD5K9AH",
+                                       "type":  "SINGLE",
+                                       "content":  "Vì sao không dùng kháng sinh để trị cúm mùa?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Kháng sinh làm virus nhân lên"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Cúm do virus, kháng sinh không diệt virus"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Kháng sinh chỉ dùng cho trẻ em"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Kháng sinh thay được vaccine"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Cúm mùa do virus gây ra. Kháng sinh trị vi khuẩn, không trị virus.",
+                                       "orderNo":  6
+                                   },
+                                   {
+                                       "codeId":  "DLATFBGJ",
+                                       "type":  "SINGLE",
+                                       "content":  "Người đang sốt vì cúm nên nghỉ ngơi ở đâu?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Ở nhà, tránh chỗ đông người"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Đến nơi đông người cho quen bệnh"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Đi bơi ngay"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Không cần nghỉ"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Nghỉ ở nhà khi sốt giúp cơ thể hồi phục và hạn chế lây cúm.",
+                                       "orderNo":  7
+                                   },
+                                   {
+                                       "codeId":  "SDVUQGBY",
+                                       "type":  "SINGLE",
+                                       "content":  "Nhóm triệu chứng nào hay gặp khi mắc cúm?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Chỉ ngứa da"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Sốt, ho, mệt"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Chỉ đau bụng"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Không có triệu chứng nào"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Cúm thường gây sốt, ho và mệt mỏi. Nếu nặng cần đi khám.",
+                                       "orderNo":  8
+                                   },
+                                   {
+                                       "codeId":  "FYP8NUQ6",
+                                       "type":  "SINGLE",
+                                       "content":  "Vì sao vaccine cúm cần được cập nhật theo mùa?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Vì virus cúm có thể đổi chủng"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Vì vaccine chỉ có tác dụng một ngày"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Vì thời tiết làm hỏng kháng thể ngay"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Vì kháng sinh hết hạn"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Virus cúm hay đổi chủng, nên vaccine được cập nhật để phù hợp các chủng đang lưu hành.",
+                                       "orderNo":  9
+                                   },
+                                   {
+                                       "codeId":  "NBGKLH8E",
+                                       "type":  "SINGLE",
+                                       "content":  "Vì sao phải chọn đúng chiến binh với đúng loại virus?",
+                                       "options":  [
+                                                       {
+                                                           "key":  "A",
+                                                           "label":  "Vì màu áo cho đẹp"
+                                                       },
+                                                       {
+                                                           "key":  "B",
+                                                           "label":  "Vì mỗi loại virus cần đúng đáp ứng miễn dịch"
+                                                       },
+                                                       {
+                                                           "key":  "C",
+                                                           "label":  "Vì bắn càng nhiều càng tốt"
+                                                       },
+                                                       {
+                                                           "key":  "D",
+                                                           "label":  "Vì mọi virus dùng chung một kháng thể"
+                                                       }
+                                                   ],
+                                       "blanks":  0,
+                                       "points":  200,
+                                       "imageUrl":  null,
+                                       "explanation":  "Mỗi loại virus cần đúng kháng thể, đúng đáp ứng miễn dịch. Chọn sai là chưa hạ được virus đó.",
+                                       "orderNo":  10
+                                   }
+                               ]
+             }
+}

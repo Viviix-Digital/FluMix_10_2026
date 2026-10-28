@@ -31,7 +31,7 @@ namespace FluMix
         public int wrongHeroScore = -50;
         public int virusReachScore = -50;
         public int correctQuestionScore = 200;
-        public int wrongQuestionScore = -100;
+        public int wrongQuestionScore = -50;
 
         public float roundSeconds = 120f;
         public float questionSeconds = 10f;

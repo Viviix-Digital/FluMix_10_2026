@@ -125,6 +125,8 @@ namespace FluMix
                         label.text = string.Empty;
                 }
             }
+
+            ApplyBottomPadding(0);
         }
 
         void ApplyEntries(LeaderboardEntry[] entries)
@@ -148,6 +150,49 @@ namespace FluMix
                     FillRow(row, entries[rowIndex], rowIndex);
                 rowIndex++;
             }
+
+            ApplyBottomPadding(entries.Length);
+        }
+
+        /// <summary>
+        /// Neo bảng lên trên bằng padding.bottom VLG.
+        /// Neo: 2 người = 424, full slot = 0; các mức khác nội suy tuyến tính.
+        /// </summary>
+        void ApplyBottomPadding(int visibleCount)
+        {
+            VerticalLayoutGroup layout = rowsRoot.GetComponent<VerticalLayoutGroup>();
+            if (layout == null)
+                return;
+
+            int fullCount = CountScoreSlots();
+            if (fullCount < 2)
+                fullCount = 10;
+
+            const int bottomAtTwo = 424;
+            int bottom;
+            if (visibleCount >= fullCount)
+                bottom = 0;
+            else
+                bottom = Mathf.RoundToInt(bottomAtTwo * (fullCount - visibleCount) / (float)(fullCount - 2));
+
+            RectOffset padding = layout.padding;
+            if (padding.bottom == bottom)
+                return;
+
+            padding.bottom = bottom;
+            layout.padding = padding;
+            LayoutRebuilder.MarkLayoutForRebuild(rowsRoot);
+        }
+
+        int CountScoreSlots()
+        {
+            int count = 0;
+            for (int i = 0; i < rowsRoot.childCount; i++)
+            {
+                if (IsScoreRow(rowsRoot.GetChild(i).name))
+                    count++;
+            }
+            return count;
         }
 
         static bool IsScoreRow(string name)

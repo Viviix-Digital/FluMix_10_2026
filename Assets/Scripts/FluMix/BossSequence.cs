@@ -181,6 +181,7 @@ namespace FluMix
                     correct = false;
                     pointsDelta = config.wrongQuestionScore;
                     Debug.LogWarning("[FluMist] Answer progress failed: " + services.RoundSession.LastError);
+                    services.RoundSession.OnVirusDelta(pointsDelta);
                     if (score != null)
                         score.SetScore(services.RoundSession.HudScore);
                 }
@@ -195,6 +196,18 @@ namespace FluMix
                     correctKey = string.IsNullOrEmpty(progress.answer.correctAnswer)
                         ? null
                         : progress.answer.correctAnswer;
+
+                    // Project API often has wrongAnswerPoints=0 — apply local wrong penalty via extraPoints.
+                    if (!correct)
+                    {
+                        int desired = config.wrongQuestionScore;
+                        if (pointsDelta > desired)
+                        {
+                            int patch = desired - pointsDelta;
+                            services.RoundSession.OnVirusDelta(patch);
+                            pointsDelta = desired;
+                        }
+                    }
 
                     Debug.Log(
                         $"[FluMist] Answer graded: pick={answerKey} correct={correct} points={pointsDelta} correctAnswer={correctKey ?? "(hidden)"}");

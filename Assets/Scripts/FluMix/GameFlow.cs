@@ -325,8 +325,15 @@ namespace FluMix
                     yield break;
                 }
 
+                // Milestone boss là theo từng ván — phải clear used/pending trước khi sync HUD.
+                // Chỉ SetScore(HudScore) sẽ giữ usedMilestones từ ván cũ → chơi lại không ra boss.
                 if (score != null)
-                    score.SetScore(services.RoundSession.HudScore);
+                {
+                    score.ResetScore();
+                    int hud = services.RoundSession.HudScore;
+                    if (hud != 0)
+                        score.SetScore(hud);
+                }
             }
             else if (score != null)
             {

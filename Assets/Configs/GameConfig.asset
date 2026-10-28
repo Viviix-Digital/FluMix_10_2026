@@ -16,7 +16,7 @@ MonoBehaviour:
   wrongHeroScore: -50
   virusReachScore: -50
   correctQuestionScore: 200
-  wrongQuestionScore: -100
+  wrongQuestionScore: -50
   roundSeconds: 120
   questionSeconds: 10
   bossCountdownStep: 1
