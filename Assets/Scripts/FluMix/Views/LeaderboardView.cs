@@ -34,11 +34,8 @@ namespace FluMix
         void Awake()
         {
             Wire();
-        }
-
-        void OnEnable()
-        {
-            Refresh();
+            // Scene placeholders must not show before the first API/local fill.
+            ClearRows();
         }
 
         void Wire()
@@ -51,53 +48,90 @@ namespace FluMix
 
         public void Refresh()
         {
+            if (refreshRoutine != null)
+                StopCoroutine(refreshRoutine);
+            refreshRoutine = StartCoroutine(RefreshRoutine());
+        }
+
+        /// <summary>Load xong (API hoặc local) rồi mới return — dùng trước khi mở màn Leaderboard.</summary>
+        public IEnumerator RefreshRoutine()
+        {
             if (rowsRoot == null || services == null)
-                return;
+                yield break;
+
+            ClearRows();
 
             if (services.UseOnlineApi && services.Api != null && services.Api.IsAuthenticated)
             {
-                if (refreshRoutine != null)
-                    StopCoroutine(refreshRoutine);
-                refreshRoutine = StartCoroutine(RefreshOnline());
-                return;
+                LeaderboardDto board = null;
+                string err = null;
+                yield return services.Api.Leaderboard(10, b => board = b, (h, c, m) => err = m);
+
+                if (board == null)
+                {
+                    Debug.LogWarning("[FluMist] Leaderboard failed: " + err);
+                    ClearRows();
+                    refreshRoutine = null;
+                    yield break;
+                }
+
+                int count = board.top != null ? board.top.Length : 0;
+                var entries = new LeaderboardEntry[count];
+                for (int i = 0; i < count; i++)
+                {
+                    RankRowDto row = board.top[i];
+                    entries[i] = new LeaderboardEntry
+                    {
+                        name = row != null ? row.displayName : string.Empty,
+                        score = row != null ? row.totalScore : 0,
+                        rank = row != null ? row.rank : i + 1,
+                        isMe = row != null && row.isMe
+                    };
+                }
+
+                ApplyEntries(entries);
+            }
+            else
+            {
+                LeaderboardEntry[] entries = services.Leaderboard != null
+                    ? services.Leaderboard.GetTop(10)
+                    : System.Array.Empty<LeaderboardEntry>();
+                ApplyEntries(entries);
             }
 
-            LeaderboardEntry[] entries = services.Leaderboard.GetTop(10);
-            ApplyEntries(entries);
+            refreshRoutine = null;
         }
 
-        IEnumerator RefreshOnline()
+        void ClearRows()
         {
-            LeaderboardDto board = null;
-            string err = null;
-            yield return services.Api.Leaderboard(10, b => board = b, (h, c, m) => err = m);
-            refreshRoutine = null;
+            if (rowsRoot == null)
+                return;
 
-            if (board == null)
+            for (int i = 0; i < rowsRoot.childCount; i++)
             {
-                Debug.LogWarning("[FluMist] Leaderboard failed: " + err);
-                yield break;
-            }
+                Transform row = rowsRoot.GetChild(i);
+                if (!IsScoreRow(row.name))
+                    continue;
 
-            int count = board.top != null ? board.top.Length : 0;
-            var entries = new LeaderboardEntry[count];
-            for (int i = 0; i < count; i++)
-            {
-                RankRowDto row = board.top[i];
-                entries[i] = new LeaderboardEntry
+                row.gameObject.SetActive(false);
+                TMP_Text[] labels = row.GetComponentsInChildren<TMP_Text>(true);
+                for (int t = 0; t < labels.Length; t++)
                 {
-                    name = row != null ? row.displayName : string.Empty,
-                    score = row != null ? row.totalScore : 0,
-                    rank = row != null ? row.rank : i + 1,
-                    isMe = row != null && row.isMe
-                };
+                    TMP_Text label = labels[t];
+                    if (label == null)
+                        continue;
+                    string objectName = label.gameObject.name;
+                    if (objectName.Contains("Player Name") || objectName.Contains("Score") || objectName.Contains("Rank"))
+                        label.text = string.Empty;
+                }
             }
-
-            ApplyEntries(entries);
         }
 
         void ApplyEntries(LeaderboardEntry[] entries)
         {
+            if (rowsRoot == null)
+                return;
+
             if (entries == null)
                 entries = System.Array.Empty<LeaderboardEntry>();
 

@@ -138,5 +138,29 @@ namespace FluMix
 
             return HeroId.A;
         }
+
+        public VirusType VirusFor(HeroId hero)
+        {
+            if (match == null)
+                return VirusType.Green;
+
+            for (int i = 0; i < match.Length; i++)
+            {
+                if (match[i].hero == hero)
+                    return match[i].virus;
+            }
+
+            return VirusType.Green;
+        }
+
+        public static Color ColorForVirus(VirusType type)
+        {
+            switch (type)
+            {
+                case VirusType.Orange: return new Color(1f, 0.55f, 0.1f);
+                case VirusType.Red: return new Color(1f, 0.15f, 0.15f);
+                default: return new Color(0.2f, 0.95f, 0.35f);
+            }
+        }
     }
 }

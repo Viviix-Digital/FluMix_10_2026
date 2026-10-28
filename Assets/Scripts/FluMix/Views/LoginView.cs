@@ -34,6 +34,8 @@ namespace FluMix
         [SerializeField] Button signUpSubmitButton;
         [SerializeField] Button signUpEyeButton;
         [SerializeField] Image signUpEyeImage;
+        [SerializeField] Button signUpEyeButtonAgain;
+        [SerializeField] Image signUpEyeImageAgain;
         [SerializeField] Button goToLoginButton;
         [SerializeField] TMP_Text signUpStatus;
         [SerializeField] RectTransform signUpShakeTarget;
@@ -42,12 +44,16 @@ namespace FluMix
         [SerializeField] Sprite eyeOpen;
         [SerializeField] Sprite eyeClosed;
 
+        [Header("In-game keyboard")]
+        [SerializeField] InGameKeyboard keyboard;
+
         static readonly Color LinkWhite = new Color(1f, 1f, 1f, 0.92f);
         static readonly Color StatusYellow = new Color(1f, 0.92f, 0.4f, 1f);
 
         bool loginPasswordHidden = true;
         bool signUpPasswordHidden = true;
         bool busy;
+        bool fieldsHooked;
         Vector2 loginShakeBase;
         Vector2 signUpShakeBase;
 
@@ -84,17 +90,38 @@ namespace FluMix
 
         void Awake()
         {
+#if UNITY_WEBGL && !UNITY_EDITOR
+            WebGLInput.mobileKeyboardSupport = false;
+#endif
             ResolvePanels();
             if (loginShakeTarget != null)
                 loginShakeBase = loginShakeTarget.anchoredPosition;
             if (signUpShakeTarget != null)
                 signUpShakeBase = signUpShakeTarget.anchoredPosition;
+            EnsureKeyboard();
             Wire();
         }
 
         void OnEnable()
         {
             busy = false;
+        }
+
+        void OnDisable()
+        {
+            if (keyboard != null)
+                keyboard.Hide();
+        }
+
+        void LateUpdate()
+        {
+            if (keyboard == null || !keyboard.IsVisible)
+                return;
+
+            bool onLogin = loginRoot != null && loginRoot.activeInHierarchy;
+            bool onSignUp = signUpRoot != null && signUpRoot.activeInHierarchy;
+            if (!onLogin && !onSignUp)
+                keyboard.Hide();
         }
 
         void ResolvePanels()
@@ -190,12 +217,14 @@ namespace FluMix
                     }
                 }
 
-                // Link chữ nhỏ về Login: tạo từ ForgotMessage vị trí hoặc SignupButton phụ
-                if (goToLoginButton == null)
+                if (signUpEyeButtonAgain == null)
                 {
-                    var btn = signUpRoot.transform.Find("SignUp Panel/SignupButton");
-                    if (btn != null && (signUpSubmitButton == null || btn != signUpSubmitButton.transform))
-                        goToLoginButton = btn.GetComponent<Button>();
+                    var eyeAgain = signUpRoot.transform.Find("SignUp Panel/Password Again/PreviewPassWord");
+                    if (eyeAgain != null)
+                    {
+                        signUpEyeButtonAgain = eyeAgain.GetComponent<Button>();
+                        signUpEyeImageAgain = eyeAgain.GetComponent<Image>();
+                    }
                 }
 
                 if (signUpStatus == null)
@@ -211,7 +240,41 @@ namespace FluMix
                     if (panel != null)
                         signUpShakeTarget = panel as RectTransform;
                 }
+
+                // Link chữ nhỏ về Login — giống ForgotPassword ở màn đăng nhập.
+                if (goToLoginButton == null)
+                    goToLoginButton = EnsureGoToLoginLink(signUpRoot.transform);
             }
+        }
+
+        static Button EnsureGoToLoginLink(Transform signUpRoot)
+        {
+            Transform panel = signUpRoot.Find("SignUp Panel");
+            if (panel == null)
+                return null;
+
+            // Dùng object đã setup trong scene — không đổi RectTransform / vị trí.
+            Transform link = panel.Find("GoToLogin");
+            if (link == null)
+                link = panel.Find("ForgotPassword");
+            if (link == null)
+                return null;
+
+            var image = link.GetComponent<Image>();
+            if (image != null)
+            {
+                Color c = image.color;
+                c.a = 0f;
+                image.color = c;
+                image.raycastTarget = true;
+            }
+
+            var button = link.GetComponent<Button>() ?? link.gameObject.AddComponent<Button>();
+            if (image != null)
+                button.targetGraphic = image;
+            button.transition = Selectable.Transition.None;
+            link.gameObject.SetActive(true);
+            return button;
         }
 
         static Transform FindNamed(string name)
@@ -298,15 +361,15 @@ namespace FluMix
                 signUpEyeButton.onClick.AddListener(ToggleSignUpPassword);
             }
 
-            ApplyPasswordMode(loginPassword, loginEyeImage, loginPasswordHidden);
-            ApplyPasswordMode(signUpPassword, signUpEyeImage, signUpPasswordHidden);
-            if (signUpPasswordAgain != null)
+            if (signUpEyeButtonAgain != null)
             {
-                signUpPasswordAgain.contentType = signUpPasswordHidden
-                    ? TMP_InputField.ContentType.Password
-                    : TMP_InputField.ContentType.Standard;
-                signUpPasswordAgain.ForceLabelUpdate();
+                signUpEyeButtonAgain.onClick.RemoveListener(ToggleSignUpPassword);
+                signUpEyeButtonAgain.onClick.AddListener(ToggleSignUpPassword);
             }
+
+            ApplyPasswordMode(loginPassword, loginEyeImage, loginPasswordHidden);
+            ApplySignUpPasswordMode();
+            HookInputFields();
 
             if (loginStatus != null)
             {
@@ -321,9 +384,79 @@ namespace FluMix
             }
         }
 
+        void EnsureKeyboard()
+        {
+            if (keyboard == null)
+                keyboard = GetComponent<InGameKeyboard>();
+            if (keyboard == null)
+                keyboard = gameObject.AddComponent<InGameKeyboard>();
+
+            Transform canvasRoot = null;
+            if (loginRoot != null)
+            {
+                Canvas canvas = loginRoot.GetComponentInParent<Canvas>();
+                if (canvas != null)
+                    canvasRoot = canvas.transform;
+            }
+
+            if (canvasRoot == null && signUpRoot != null)
+            {
+                Canvas canvas = signUpRoot.GetComponentInParent<Canvas>();
+                if (canvas != null)
+                    canvasRoot = canvas.transform;
+            }
+
+            keyboard.EnsureBuilt(canvasRoot != null ? canvasRoot : transform);
+        }
+
+        void HookInputFields()
+        {
+            if (fieldsHooked)
+                return;
+
+            HookField(loginUsername, true);
+            HookField(loginPassword, true);
+            HookField(signUpUsername, false);
+            HookField(signUpPassword, false);
+            HookField(signUpPasswordAgain, false);
+            fieldsHooked = true;
+        }
+
+        void HookField(TMP_InputField field, bool loginPanel)
+        {
+            if (field == null)
+                return;
+
+            field.shouldHideMobileInput = true;
+            field.onFocusSelectAll = false;
+            if (field.characterLimit <= 0)
+            {
+                bool isPassword = field == loginPassword
+                    || field == signUpPassword
+                    || field == signUpPasswordAgain;
+                field.characterLimit = isPassword ? 128 : 64;
+            }
+
+            field.onSelect.RemoveAllListeners();
+            field.onDeselect.RemoveAllListeners();
+            field.onSelect.AddListener(_ =>
+            {
+                EnsureKeyboard();
+                RectTransform lift = loginPanel ? loginShakeTarget : signUpShakeTarget;
+                keyboard.Attach(field, lift);
+            });
+            field.onDeselect.AddListener(_ =>
+            {
+                if (keyboard != null)
+                    keyboard.NotifyDeselect(field);
+            });
+        }
+
         public void OpenSignUp()
         {
             FluMixSfx.Play("ui_page");
+            if (keyboard != null)
+                keyboard.Hide();
             ShowStatus(null, true);
             if (flow != null)
                 flow.SetScreen(FluMixScreen.Register);
@@ -334,6 +467,8 @@ namespace FluMix
         public void OpenLogin()
         {
             FluMixSfx.Play("ui_page");
+            if (keyboard != null)
+                keyboard.Hide();
             ShowStatus(null, false);
             if (flow != null)
                 flow.SetScreen(FluMixScreen.Login);
@@ -371,6 +506,9 @@ namespace FluMix
             if (busy)
                 return;
 
+            if (keyboard != null)
+                keyboard.Hide();
+
             string user = loginUsername != null ? loginUsername.text : string.Empty;
             string pass = loginPassword != null ? loginPassword.text : string.Empty;
 
@@ -401,13 +539,17 @@ namespace FluMix
             if (busy)
                 return;
 
+            if (keyboard != null)
+                keyboard.Hide();
+
             string user = signUpUsername != null ? signUpUsername.text : string.Empty;
             string pass = signUpPassword != null ? signUpPassword.text : string.Empty;
             string pass2 = signUpPasswordAgain != null ? signUpPasswordAgain.text : string.Empty;
 
+            // Cho phép gõ khoảng trắng; NormUser bỏ khoảng trắng trước khi kiểm / gửi username.
             if (!FluMistApi.ValidUsername(user))
             {
-                FailLocal("Username 3–64 ký tự: chữ không dấu, số, . _ - @ +. Vui lòng thử lại.", false);
+                FailLocal("Tên 3–64 ký tự: chữ không dấu, số, . _ - @ + (khoảng trắng được phép). Vui lòng thử lại.", false);
                 return;
             }
 
@@ -423,7 +565,10 @@ namespace FluMix
                 return;
             }
 
-            string fullName = FluMistApi.NormUser(user);
+            // fullName giữ khoảng trắng để hiện BXH; username vẫn NormUser trong API.
+            string fullName = user != null ? user.Trim() : string.Empty;
+            if (string.IsNullOrEmpty(fullName))
+                fullName = FluMistApi.NormUser(user);
             StartCoroutine(SubmitOnline(true, user, pass, fullName));
         }
 
@@ -530,14 +675,13 @@ namespace FluMix
         {
             signUpPasswordHidden = !signUpPasswordHidden;
             FluMixSfx.Play("input_password");
+            ApplySignUpPasswordMode();
+        }
+
+        void ApplySignUpPasswordMode()
+        {
             ApplyPasswordMode(signUpPassword, signUpEyeImage, signUpPasswordHidden);
-            if (signUpPasswordAgain != null)
-            {
-                signUpPasswordAgain.contentType = signUpPasswordHidden
-                    ? TMP_InputField.ContentType.Password
-                    : TMP_InputField.ContentType.Standard;
-                signUpPasswordAgain.ForceLabelUpdate();
-            }
+            ApplyPasswordMode(signUpPasswordAgain, signUpEyeImageAgain, signUpPasswordHidden);
         }
 
         void ApplyPasswordMode(TMP_InputField field, Image eyeImage, bool hidden)

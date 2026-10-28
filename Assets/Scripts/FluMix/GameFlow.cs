@@ -452,8 +452,14 @@ namespace FluMix
 
         public void OpenLeaderboard()
         {
+            StartCoroutine(OpenLeaderboardRoutine());
+        }
+
+        IEnumerator OpenLeaderboardRoutine()
+        {
+            // Chờ API/local fill xong — tránh hiện placeholder UI chưa có JSON.
             if (leaderboardView != null)
-                leaderboardView.Refresh();
+                yield return leaderboardView.RefreshRoutine();
             SetScreen(FluMixScreen.Leaderboard);
         }
 

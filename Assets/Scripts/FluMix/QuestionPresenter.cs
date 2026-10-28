@@ -340,10 +340,9 @@ namespace FluMix
                 ? option.anchoredPosition.y
                 : mark.parent.InverseTransformPoint(option.position).y;
             mark.anchoredPosition = position;
-            // Keep authored Image color/alpha — do not force opaque.
+            // Keep authored Image color/alpha and scene sibling order — only move Y.
             highlight.gameObject.SetActive(true);
             highlight.raycastTarget = false;
-            mark.SetAsLastSibling();
         }
 
         void SetButtons(bool value)

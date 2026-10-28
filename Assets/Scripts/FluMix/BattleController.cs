@@ -355,7 +355,10 @@ namespace FluMix
 
                 float reach = AimLength(origin, aimDir, launcher.power, bounds);
                 Vector2 end = origin + aimDir * reach;
-                launcher.guide.Draw(origin, end);
+                VirusType virus = config != null
+                    ? config.VirusFor(launcher.hero.Id)
+                    : VirusType.Green;
+                launcher.guide.Draw(origin, end, GameConfig.ColorForVirus(virus));
                 if (launcher.drag.sqrMagnitude > 16f)
                 {
                     float shown = Mathf.Min(launcher.drag.magnitude, PullMax());

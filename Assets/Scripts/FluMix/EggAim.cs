@@ -25,7 +25,7 @@ namespace FluMix
                 marks[i].enabled = false;
         }
 
-        public void Draw(Vector2 origin, Vector2 end)
+        public void Draw(Vector2 origin, Vector2 end, Color color)
         {
             Vector2 delta = end - origin;
             float distance = delta.magnitude;
@@ -40,13 +40,13 @@ namespace FluMix
             int placed = 0;
             for (float cursor = gap * 0.5f; cursor < distance - 8f && placed < marks.Length - 1; cursor += gap)
             {
-                Place(placed, origin + dir * cursor, dir, cursor / distance, Mathf.Min(18f, gap * 0.62f));
+                Place(placed, origin + dir * cursor, dir, cursor / distance, Mathf.Min(18f, gap * 0.62f), color);
                 placed++;
             }
 
             if (placed < marks.Length)
             {
-                Place(placed, end, dir, 1f, Mathf.Min(18f, gap * 0.62f));
+                Place(placed, end, dir, 1f, Mathf.Min(18f, gap * 0.62f), color);
                 placed++;
             }
 
@@ -88,7 +88,7 @@ namespace FluMix
             best = distance;
         }
 
-        void Place(int index, Vector2 point, Vector2 tangent, float along, float length)
+        void Place(int index, Vector2 point, Vector2 tangent, float along, float length, Color color)
         {
             Image mark = marks[index];
             mark.enabled = true;
@@ -96,7 +96,8 @@ namespace FluMix
             rect.anchoredPosition = point;
             rect.sizeDelta = new Vector2(length, 6f);
             rect.localEulerAngles = new Vector3(0f, 0f, Mathf.Atan2(tangent.y, tangent.x) * Mathf.Rad2Deg);
-            mark.color = new Color(1f, 1f, 1f, Mathf.Lerp(1f, 0.45f, along));
+            float alpha = Mathf.Lerp(1f, 0.45f, along) * color.a;
+            mark.color = new Color(color.r, color.g, color.b, alpha);
         }
     }
 

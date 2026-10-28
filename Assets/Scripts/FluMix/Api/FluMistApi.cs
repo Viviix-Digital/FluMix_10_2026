@@ -46,7 +46,26 @@ namespace FluMix.Api
             }
         }
 
-        public static string NormUser(string username) => (username ?? string.Empty).Trim().ToLowerInvariant();
+        /// <summary>
+        /// API username: trim, bỏ mọi khoảng trắng, chữ thường.
+        /// Người chơi vẫn được gõ khoảng trắng trên UI — NormUser gỡ trước khi validate/gửi.
+        /// </summary>
+        public static string NormUser(string username)
+        {
+            if (string.IsNullOrEmpty(username))
+                return string.Empty;
+
+            var sb = new System.Text.StringBuilder(username.Length);
+            for (int i = 0; i < username.Length; i++)
+            {
+                char c = username[i];
+                if (char.IsWhiteSpace(c))
+                    continue;
+                sb.Append(char.ToLowerInvariant(c));
+            }
+
+            return sb.ToString();
+        }
 
         public static bool ValidUsername(string username) => UsernameRegex.IsMatch(NormUser(username));
 

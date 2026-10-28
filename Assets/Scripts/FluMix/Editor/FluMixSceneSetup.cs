@@ -105,7 +105,44 @@ namespace FluMix.EditorTools
             }
 
             if (signUpRoot != null)
+            {
+                // Link chữ nhỏ về đăng nhập (đối xứng với ForgotPassword ở Login).
+                var signUpPanel = Find(signUpRoot, "SignUp Panel");
+                if (signUpPanel != null)
+                {
+                    Transform goToLogin = Find(signUpPanel, "GoToLogin");
+                    if (goToLogin == null && forgot != null)
+                    {
+                        var clone = Object.Instantiate(forgot.gameObject, signUpPanel, false);
+                        clone.name = "GoToLogin";
+                        goToLogin = clone.transform;
+                    }
+
+                    if (goToLogin != null)
+                    {
+                        // Giữ RectTransform đã setup trong scene — chỉ wire style chữ / image.
+                        goToLogin.gameObject.SetActive(true);
+                        var linkLabel = goToLogin.GetComponentInChildren<TMP_Text>(true);
+                        if (linkLabel != null)
+                        {
+                            linkLabel.text = "Đã có tài khoản? Đăng nhập";
+                            linkLabel.color = new Color(1f, 1f, 1f, 0.92f);
+                            if (linkLabel.fontSize > 24f)
+                                linkLabel.fontSize = 22f;
+                        }
+
+                        var linkImg = goToLogin.GetComponent<Image>();
+                        if (linkImg != null)
+                        {
+                            Color c = linkImg.color;
+                            c.a = 0f;
+                            linkImg.color = c;
+                        }
+                    }
+                }
+
                 signUpRoot.gameObject.SetActive(false);
+            }
 
             var spawn = EnsureAnchor(arena, "SpawnPoint", new Vector2(860f, -30f));
             var wall = EnsureAnchor(arena, "WallPoint", new Vector2(-210f, -30f));

@@ -186,6 +186,9 @@ namespace FluMix
                 }
                 else
                 {
+                    // Trust server grading only. Do NOT infer correct from points:
+                    // wrong answers can still return basePoints/config values > 0 on some setups,
+                    // and that previously forced win-video on a wrong pick.
                     correct = progress.answer.correct;
                     pointsDelta = progress.answer.points;
                     // Server may omit correctAnswer when project.settings.revealAnswer=false
@@ -193,14 +196,8 @@ namespace FluMix
                         ? null
                         : progress.answer.correctAnswer;
 
-                    // Guard: positive points or matching revealed key means a correct answer.
-                    if (!correct && pointsDelta > 0)
-                        correct = true;
-                    if (!correct
-                        && !string.IsNullOrEmpty(correctKey)
-                        && !string.IsNullOrEmpty(answerKey)
-                        && string.Equals(answerKey, correctKey, StringComparison.OrdinalIgnoreCase))
-                        correct = true;
+                    Debug.Log(
+                        $"[FluMist] Answer graded: pick={answerKey} correct={correct} points={pointsDelta} correctAnswer={correctKey ?? "(hidden)"}");
 
                     if (score != null)
                         score.SetScore(services.RoundSession.HudScore);
