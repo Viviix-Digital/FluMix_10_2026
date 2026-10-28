@@ -71,9 +71,9 @@ namespace FluMix
         public float bossLungeSeconds = 0.35f;
         public float idleBobPixels = 6f;
         public float idleBobSeconds = 1.6f;
-        public float virusPulseMin = 0.96f;
-        public float virusPulseMax = 1.04f;
-        public float virusPulseSeconds = 0.8f;
+        public float virusPulseMin = 0.92f;
+        public float virusPulseMax = 1.1f;
+        public float virusPulseSeconds = 0.55f;
         public float beamStartScale = 0.15f;
         public float beamThickness = 72f;
         public float beamCoreThickness = 14f;

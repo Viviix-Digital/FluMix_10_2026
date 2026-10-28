@@ -52,9 +52,9 @@ MonoBehaviour:
   bossLungeSeconds: 0.35
   idleBobPixels: 6
   idleBobSeconds: 1.6
-  virusPulseMin: 0.96
-  virusPulseMax: 1.04
-  virusPulseSeconds: 0.8
+  virusPulseMin: 0.92
+  virusPulseMax: 1.1
+  virusPulseSeconds: 0.55
   beamStartScale: 0.15
   beamThickness: 72
   beamCoreThickness: 14

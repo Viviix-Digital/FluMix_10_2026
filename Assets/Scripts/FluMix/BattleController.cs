@@ -189,8 +189,13 @@ namespace FluMix
 
         void Update()
         {
+            // Advance viruses first so aim/drag refresh never blocks flight.
+            AdvanceViruses();
             RefreshDraggingAims();
+        }
 
+        void AdvanceViruses()
+        {
             if (!running || paused || config == null)
                 return;
 
@@ -228,7 +233,9 @@ namespace FluMix
                     }
                 }
 
-                float along = (Mathf.Max(0, virus.cell - 1) + (virus.cell > 0 ? virus.slide : 0f)) / cells;
+                // SmoothStep gives each hop a soft slerp feel instead of a linear crawl.
+                float slideT = virus.cell > 0 ? Mathf.SmoothStep(0f, 1f, virus.slide) : 0f;
+                float along = (Mathf.Max(0, virus.cell - 1) + slideT) / cells;
                 PlaceVirus(virus, Mathf.Clamp01(along));
                 if (virus.cell >= cells && virus.slide >= 1f)
                     StartCoroutine(ResolveWall(virus));
@@ -633,8 +640,11 @@ namespace FluMix
                 PrepareSheet(virus.view, next);
                 yield return fx.PlayRetype(virus.view, () =>
                 {
-                    if (virus.view != null)
-                        virus.view.Apply(next, sprite, UsesSheet(next));
+                    if (virus.view == null)
+                        return;
+                    virus.view.Apply(next, sprite, UsesSheet(next));
+                    if (!virus.airborne)
+                        virus.view.Pulse = true;
                 });
             }
 
@@ -699,6 +709,7 @@ namespace FluMix
             else
             {
                 view.SetEntranceLanded();
+                view.Pulse = true;
             }
 
             var active = new ActiveVirus
@@ -711,8 +722,8 @@ namespace FluMix
                 airborne = airborne
             };
             view.Rect.localScale = Vector3.one;
-            // Temporarily disable virus pulse scale animation too.
-            view.Pulse = false;
+            if (airborne)
+                view.Pulse = false;
             alive.Add(active);
             PlaceVirus(active, 0f);
             return true;
@@ -767,8 +778,11 @@ namespace FluMix
 
         float ProgressOf(ActiveVirus virus)
         {
+            if (virus == null)
+                return 0f;
             int cells = config != null && config.virusCellCount > 1 ? config.virusCellCount : 8;
-            return Mathf.Clamp01((Mathf.Max(0, virus.cell - 1) + (virus.cell > 0 ? virus.slide : 0f)) / cells);
+            float slideT = virus.cell > 0 ? Mathf.SmoothStep(0f, 1f, virus.slide) : 0f;
+            return Mathf.Clamp01((Mathf.Max(0, virus.cell - 1) + slideT) / cells);
         }
 
         void Remove(ActiveVirus virus)
@@ -830,7 +844,7 @@ namespace FluMix
             VirusType type = virus.view.Type;
             virus.view.SetEntranceLanded();
             virus.view.Apply(type, SpriteFor(type), UsesSheet(type));
-            virus.view.Pulse = false;
+            virus.view.Pulse = true;
             PlaceVirus(virus, 0f);
         }
 

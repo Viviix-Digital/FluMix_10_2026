@@ -145,8 +145,7 @@ namespace FluMix
                 return;
             }
 
-            // Temporarily: static virus sprite only (no sheet / pulse animation).
-            Pulse = false;
+            // Static sprite; ground idle pop is controlled by Pulse from BattleController.
             if (sheet != null)
             {
                 sheet.Stop(false);
@@ -161,10 +160,21 @@ namespace FluMix
             if (!Pulse || config == null)
                 return;
 
+            ApplyPulseScale();
+        }
+
+        float PulseFactor()
+        {
+            if (!Pulse || config == null)
+                return 1f;
             float duration = Mathf.Max(0.01f, config.virusPulseSeconds);
             float wave = (Mathf.Sin(Time.time * (Mathf.PI * 2f / duration)) + 1f) * 0.5f;
-            float scale = Mathf.Lerp(config.virusPulseMin, config.virusPulseMax, wave);
-            Rect.localScale = baseScale * scale;
+            return Mathf.Lerp(config.virusPulseMin, config.virusPulseMax, wave);
+        }
+
+        void ApplyPulseScale()
+        {
+            Rect.localScale = baseScale * PulseFactor();
         }
 
         public void SetTint(Color color)
@@ -177,7 +187,8 @@ namespace FluMix
         public void SetScale(Vector3 scale)
         {
             baseScale = scale;
-            Rect.localScale = scale;
+            // Keep current pop factor so PlaceVirus each frame does not flatten idle bounce.
+            Rect.localScale = scale * PulseFactor();
         }
 
         public void SetEntranceFlight(GameObject smokePrefab)
@@ -207,9 +218,11 @@ namespace FluMix
             effect.samplingWidth = 1f;
             effect.samplingScale = 1f;
             effect.shadowMode = ShadowMode.Mirror;
-            effect.shadowMirrorScale = 0.6f;
-            effect.shadowFade = 0.252f;
-            effect.shadowDistance = new Vector2(0.4f, 0f);
+            // Stronger floor mirror while grounded.
+            effect.shadowMirrorScale = 1.15f;
+            effect.shadowFade = 0.55f;
+            effect.shadowDistance = new Vector2(0.85f, 0f);
+            effect.shadowBlurIntensity = 0.35f;
         }
 
         void LateUpdate()
