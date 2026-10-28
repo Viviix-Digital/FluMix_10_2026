@@ -97,6 +97,73 @@ namespace FluMix
             FluMixSfx.Play("quiz_correct");
         }
 
+        public IEnumerator PlayWinRoutine()
+        {
+            ResolveShield();
+            if (shield == null)
+                yield break;
+
+            PlaceShield();
+            shield.gameObject.SetActive(true);
+            float seconds = PlayParticles(shield);
+            FluMixSfx.Play("quiz_correct");
+            yield return new WaitForSeconds(Mathf.Max(0.45f, seconds));
+            HideWin();
+        }
+
+        /// <summary>Ba tia hero bắn đồng thời vào một điểm (boss win).</summary>
+        public float PlayTripleOverUi(RectTransform space, Vector2 fromA, Vector2 fromG, Vector2 fromT, Vector2 toLocal)
+        {
+            if (space == null)
+                return 0f;
+
+            EnsureLineShots();
+            if (shotRoutine != null)
+            {
+                StopCoroutine(shotRoutine);
+                shotRoutine = null;
+            }
+
+            HideLine(shotA);
+            HideLine(shotG);
+            HideLine(shotT);
+
+            PlaceHeroShot(shotA, HeroId.A, space, fromA, toLocal);
+            PlaceHeroShot(shotG, HeroId.G, space, fromG, toLocal);
+            PlaceHeroShot(shotT, HeroId.T, space, fromT, toLocal);
+            FluMixSfx.Play("impact_correct");
+
+            float hold = 0.55f;
+            if (Application.isPlaying && isActiveAndEnabled)
+                shotRoutine = StartCoroutine(StopAllLines(hold));
+            return hold;
+        }
+
+        void PlaceHeroShot(LineShot shot, HeroId hero, RectTransform space, Vector2 fromLocal, Vector2 toLocal)
+        {
+            if (shot == null || shot.root == null)
+                return;
+
+            Vector3 start = space.TransformPoint(new Vector3(fromLocal.x, fromLocal.y, 0f));
+            Vector3 end = space.TransformPoint(new Vector3(toLocal.x, toLocal.y, 0f));
+            start.z = shotPlaneZ;
+            end.z = shotPlaneZ;
+            PlaceShot(shot, start, end, true);
+            if (shot.hit != null)
+                PlayParticles(shot.hit.transform);
+            string cue = hero == HeroId.A ? "beam_blue" : hero == HeroId.G ? "beam_green" : "beam_pink";
+            FluMixSfx.Play(cue);
+        }
+
+        IEnumerator StopAllLines(float seconds)
+        {
+            yield return new WaitForSeconds(seconds);
+            HideLine(shotA);
+            HideLine(shotG);
+            HideLine(shotT);
+            shotRoutine = null;
+        }
+
         public void PlayShot(HeroId hero, Vector3 worldStart, Vector3 worldEnd, bool connect, bool impactSound = true)
         {
             EnsureLineShots();

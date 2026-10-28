@@ -86,6 +86,7 @@ namespace FluMix
 
         public bool IsPaused => paused;
         public bool IsBusy => inputLocked;
+        public HeroView[] Heroes => heroes;
         public VirusType? CurrentType => alive.Count > 0 ? FrontVirus()?.view.Type : (VirusType?)null;
 
         public HeroId CorrectHero =>

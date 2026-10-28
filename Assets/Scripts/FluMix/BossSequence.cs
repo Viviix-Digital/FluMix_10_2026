@@ -244,13 +244,11 @@ namespace FluMix
                     // already added above for offline
                 }
 
-                fx.HideBoss();
                 if (battle != null)
                     battle.ClearField();
-                // Correct: play win video fully (no shield / particle VFX), then Continue.
-                FluMixSfx.SetMusicMuted(true);
-                yield return fx.PlayWinVideo();
-                FluMixSfx.SetMusicMuted(false);
+                // Tạm tắt win video — dùng VFX cũ: 3 hero bắn, shake, boss chết, khiên.
+                yield return fx.PlayBossWinResolve(battle != null ? battle.Heroes : null);
+                fx.PlayScorePopup(pointsDelta != 0 ? pointsDelta : config.correctQuestionScore, Vector2.zero);
                 bannerEndsRound = flow.IsRoundOver;
                 fx.ShowWinBanner(bannerEndsRound);
                 while (!bannerDismissed)

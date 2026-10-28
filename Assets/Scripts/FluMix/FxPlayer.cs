@@ -584,9 +584,61 @@ namespace FluMix
 
         public IEnumerator PlayWinShield()
         {
-            // Deprecated for correct-answer resolve — use PlayWinVideo instead.
-            HideWinShield();
-            yield break;
+            FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
+            if (shots == null)
+                shots = FindAnyObjectByType<FluMixShotVfx>();
+            if (shots != null)
+                yield return shots.PlayWinRoutine();
+        }
+
+        /// <summary>
+        /// Win boss cũ: 3 hero bắn → lắc màn → boss chết biến mất → khiên năng lượng.
+        /// </summary>
+        public IEnumerator PlayBossWinResolve(HeroView[] heroes)
+        {
+            Vector2 bossPoint = boss != null ? boss.anchoredPosition : Vector2.zero;
+            FluMixShotVfx shots = GetComponent<FluMixShotVfx>();
+            if (shots == null)
+                shots = FindAnyObjectByType<FluMixShotVfx>();
+
+            float hold = 0f;
+            HeroView heroA = FindHero(heroes, HeroId.A);
+            HeroView heroG = FindHero(heroes, HeroId.G);
+            HeroView heroT = FindHero(heroes, HeroId.T);
+            if (shots != null && arena != null && heroA != null && heroG != null && heroT != null)
+            {
+                hold = shots.PlayTripleOverUi(
+                    arena,
+                    MuzzlePoint(heroA),
+                    MuzzlePoint(heroG),
+                    MuzzlePoint(heroT),
+                    bossPoint);
+            }
+            else if (heroes != null)
+            {
+                for (int i = 0; i < heroes.Length; i++)
+                {
+                    HeroView hero = heroes[i];
+                    if (hero == null)
+                        continue;
+                    yield return PlayBeam(hero.Id, MuzzlePoint(hero), bossPoint, true, i == heroes.Length - 1);
+                }
+                hold = 0f;
+            }
+
+            if (hold > 0f)
+            {
+                float elapsed = 0f;
+                while (elapsed < hold)
+                {
+                    elapsed += Time.deltaTime;
+                    yield return null;
+                }
+            }
+
+            Shake();
+            yield return PlayBossDefeat();
+            yield return PlayWinShield();
         }
 
         public void HideWinShield()
@@ -1277,6 +1329,25 @@ namespace FluMix
                 return Vector2.zero;
             Vector3 local = arena.InverseTransformPoint(point.TransformPoint(Vector3.zero));
             return new Vector2(local.x, local.y);
+        }
+
+        static HeroView FindHero(HeroView[] heroes, HeroId id)
+        {
+            if (heroes == null)
+                return null;
+            for (int i = 0; i < heroes.Length; i++)
+            {
+                if (heroes[i] != null && heroes[i].Id == id)
+                    return heroes[i];
+            }
+            return null;
+        }
+
+        Vector2 MuzzlePoint(HeroView hero)
+        {
+            if (hero == null)
+                return Vector2.zero;
+            return ArenaPoint(hero.Muzzle);
         }
 
         IEnumerator PlayImpact(Vector2 position, float angle)
