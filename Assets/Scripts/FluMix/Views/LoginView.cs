@@ -46,6 +46,8 @@ namespace FluMix
 
         [Header("In-game keyboard")]
         [SerializeField] InGameKeyboard keyboard;
+        [Tooltip("Tạm tắt: dùng bàn phím hệ thống / HTML soft keyboard thay vì InGameKeyboard.")]
+        [SerializeField] bool useInGameKeyboard;
 
         static readonly Color LinkWhite = new Color(1f, 1f, 1f, 0.92f);
         static readonly Color StatusYellow = new Color(1f, 0.92f, 0.4f, 1f);
@@ -91,14 +93,18 @@ namespace FluMix
         void Awake()
         {
 #if UNITY_WEBGL && !UNITY_EDITOR
-            WebGLInput.mobileKeyboardSupport = false;
+            // useInGameKeyboard=false → cho phép soft keyboard hệ thống.
+            WebGLInput.mobileKeyboardSupport = !useInGameKeyboard;
 #endif
             ResolvePanels();
             if (loginShakeTarget != null)
                 loginShakeBase = loginShakeTarget.anchoredPosition;
             if (signUpShakeTarget != null)
                 signUpShakeBase = signUpShakeTarget.anchoredPosition;
-            EnsureKeyboard();
+            if (useInGameKeyboard)
+                EnsureKeyboard();
+            else if (keyboard != null)
+                keyboard.Hide();
             Wire();
         }
 
@@ -109,13 +115,13 @@ namespace FluMix
 
         void OnDisable()
         {
-            if (keyboard != null)
+            if (useInGameKeyboard && keyboard != null)
                 keyboard.Hide();
         }
 
         void LateUpdate()
         {
-            if (keyboard == null || !keyboard.IsVisible)
+            if (!useInGameKeyboard || keyboard == null || !keyboard.IsVisible)
                 return;
 
             bool onLogin = loginRoot != null && loginRoot.activeInHierarchy;
@@ -427,7 +433,8 @@ namespace FluMix
             if (field == null)
                 return;
 
-            field.shouldHideMobileInput = true;
+            // Hệ thống keyboard: không ẩn mobile input. In-game keyboard: ẩn.
+            field.shouldHideMobileInput = useInGameKeyboard;
             field.onFocusSelectAll = false;
             if (field.characterLimit <= 0)
             {
@@ -439,6 +446,9 @@ namespace FluMix
 
             field.onSelect.RemoveAllListeners();
             field.onDeselect.RemoveAllListeners();
+            if (!useInGameKeyboard)
+                return;
+
             field.onSelect.AddListener(_ =>
             {
                 EnsureKeyboard();

@@ -31,6 +31,8 @@ namespace FluMix
         public void Continue()
         {
             FluMixSfx.Play("ui_confirm");
+            // User gesture → browser fullscreen + try landscape (WebGL).
+            FluMixFullscreen.EnterForPlay();
             if (flow != null)
                 flow.StartRound();
         }
